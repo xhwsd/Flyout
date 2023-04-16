@@ -1,0 +1,7 @@
+## Interface: 11200
+## Title: Flyout |cff808080by luskanek
+## Author: luskanek
+## Notes: Allows the player to create a flyout action bar button.
+## Version: GIT
+
+main.lua
