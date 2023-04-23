@@ -1,16 +1,16 @@
+Flyout = CreateFrame('Frame', 'Flyout')
+
+Flyout.COMMAND = '/flyout'
+Flyout.MAX_BUTTONS = 12
+Flyout.DELIMITER = ';'
+
 local _G = getfenv(0)
 
-local Config = {
-    COMMAND = '/flyout',
-    MAX_BUTTONS = 12,
-    BUTTON_SIZE = 30,
-    DELIMITER = ';',
-}
-local ActionBars = { 'Action', 'BonusAction', 'MultiBarBottomLeft', 'MultiBarBottomRight', 'MultiBarRight', 'MultiBarLeft' }
-local Active = nil
+local bars = { 'Action', 'BonusAction', 'MultiBarBottomLeft', 'MultiBarBottomRight', 'MultiBarRight', 'MultiBarLeft' }
+local active = nil
 
 -- placeholder slash command
-SLASH_FLYOUT1 = Config.COMMAND
+SLASH_FLYOUT1 = Flyout.COMMAND
 SlashCmdList['FLYOUT'] = function()
     return nil
 end
@@ -32,7 +32,7 @@ local function strsplit(str, delimiter)
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
-local function GetSpellSlotByName(name)
+function Flyout.GetSpellSlotByName(name)
     name = strlower(name)
     local b, _, rank = strfind(name, "%(%s*rank%s+(%d+)%s*%)")
     if b then name = (b > 1) and strtrim(strsub(name, 1, b - 1)) or "" end
@@ -49,19 +49,19 @@ local function GetSpellSlotByName(name)
     end
 end
 
-local function GetActionButton(action)
-	for _, bar in pairs(ActionBars) do
+function Flyout.GetActionButton(action)
+	for _, bar in pairs(bars) do
 		for i = 1, 12 do
 			local button = _G[bar .. "Button" .. i]
 			local slot = ActionButton_GetPagedID(button)
-			if slot == action then
+			if slot == action and button:IsVisible() then
 				return button
 			end
 		end
 	end
 end
 
-local function GetFlyoutDirection(button)
+function Flyout.GetFlyoutDirection(button)
     local isHorizontal = false
     local bar = button:GetParent()
     if bar:GetWidth() > bar:GetHeight() then
@@ -83,16 +83,16 @@ local function GetFlyoutDirection(button)
     return direction
 end
 
-local function UpdateFlyoutArrow(button)
+function Flyout.UpdateFlyoutArrow(button)
     if not button then return end
-
-    local direction = GetFlyoutDirection(button)
+    
+    local direction = Flyout.GetFlyoutDirection(button)
 
     button.arrow = _G[button:GetName() .. 'FlyoutArrow'] or button:CreateTexture(button:GetName() .. 'FlyoutArrow', 'OVERLAY')
-    button.arrow:Show()
     button.arrow:ClearAllPoints()
     button.arrow:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
-    
+    button.arrow:Show()
+
     if direction == 'BOTTOM' then
         button.arrow:SetHeight(12)
         button.arrow:SetWidth(20)
@@ -119,52 +119,74 @@ local function UpdateFlyoutArrow(button)
     end
 end
 
-local function HideFlyout()
-    for i = 1, Config.MAX_BUTTONS do
+function Flyout.UpdateBars()
+    for _, bar in ipairs(bars) do
+        for i = 1, 12 do
+            local button = _G[bar .. "Button" .. i]
+            local arrow = _G[button:GetName() .. 'FlyoutArrow']
+            if arrow then arrow:Hide() end
+
+            local slot = ActionButton_GetPagedID(button)
+            if HasAction(slot) then
+                local macro = GetActionText(slot)
+                if macro then
+                    local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
+                    local s = strfind(body, Flyout.COMMAND)
+                    if s and s == 1 then
+                        Flyout.UpdateFlyoutArrow(button)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function Flyout.HideFlyout()
+    for i = 1, Flyout.MAX_BUTTONS do
         local button = _G['FlyoutButton' .. i]
         if button then
             button:SetChecked(false)
             button:Hide()
             _G[button:GetName() .. 'NormalTexture']:SetTexture(nil)
-
-            Active = nil
         end
     end
+
+    active = nil
 end
 
 local _UseAction = UseAction
 function UseAction(slot, checkCursor)
     _UseAction(slot, checkCursor)
-
-    if Active then
-        if Active == slot then
-            HideFlyout()
-            Active = nil
+    
+    if active then
+        if active == slot then
+            Flyout.HideFlyout()
             return
-        else
-            HideFlyout()
         end
+        
+        Flyout.HideFlyout()
     end
 
-    Active = slot
+    active = slot
 
     local macro = GetActionText(slot)
     if macro then
         local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-        local s, e = strfind(body, Config.COMMAND)
+        local s, e = strfind(body, Flyout.COMMAND)
         if s and s == 1 then
-            local button = GetActionButton(slot)
+            local button = Flyout.GetActionButton(slot)
             if button then
-                --button:SetFrameStrata('TOOLTIP')
-                local direction = GetFlyoutDirection(button)
-                local offset = Config.BUTTON_SIZE
+                local direction = Flyout.GetFlyoutDirection(button)
+                local offset = button:GetHeight() - 4
 
                 body = strsub(body, e + 1)
-                for i, n in ipairs(strsplit(body, Config.DELIMITER)) do
-                    local spell = GetSpellSlotByName(n)
+                for i, n in ipairs(strsplit(body, Flyout.DELIMITER)) do
+                    local spell = Flyout.GetSpellSlotByName(n)
                     if spell then
                         local b = _G['FlyoutButton' .. i]
                         b:Show()
+                        b:SetHeight(button:GetHeight() - 4)
+                        b:SetWidth(button:GetWidth() - 4)
                         b:ClearAllPoints()
 
                         if direction == 'BOTTOM' then
@@ -181,7 +203,7 @@ function UseAction(slot, checkCursor)
                             function()
                                 CastSpell(spell, 'spell')
 
-                                HideFlyout()
+                                Flyout.HideFlyout()
                             end
                         )
                         b:SetScript('OnEnter',
@@ -202,7 +224,7 @@ function UseAction(slot, checkCursor)
                         b.texture:SetAllPoints()
                         b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-                        offset = offset + Config.BUTTON_SIZE
+                        offset = offset + (button:GetHeight() - 4)
                     end
                 end
             end
@@ -210,90 +232,52 @@ function UseAction(slot, checkCursor)
     end
 end
 
-local Flyout = CreateFrame('Frame', nil, UIParent)
-Flyout:RegisterEvent('PLAYER_ENTERING_WORLD')
+Flyout:RegisterEvent('PLAYER_LOGIN')
 Flyout:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 Flyout:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 Flyout:RegisterEvent('UPDATE_MACROS')
 Flyout:SetScript('OnEvent',
     function()
-        if event == 'PLAYER_ENTERING_WORLD' then
-            for i = 1, Config.MAX_BUTTONS do
+        if event == 'PLAYER_LOGIN' then
+            for i = 1, Flyout.MAX_BUTTONS do
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
-                button:SetHeight(Config.BUTTON_SIZE)
-                button:SetWidth(Config.BUTTON_SIZE)
                 button:Hide()
 
-                button.border = button:CreateTexture('FlyoutButton' .. i .. 'Texture', 'BACKGROUND')
+                button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
                 button.border:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
                 button.border:SetTexCoord(0, 0.515625, 0, 1)
                 button.border:SetPoint('TOPLEFT', button, -1, 1)
                 button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
             end
         
-            for _, bar in ipairs(ActionBars) do
-                for i = 1, 12 do
-                    local button = _G[bar .. "Button" .. i]
-                    local slot = ActionButton_GetPagedID(button)
-                    if HasAction(slot) then
-                        local macro = GetActionText(slot)
-                        if macro then
-                            local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                            local s = strfind(body, Config.COMMAND)
-                            if s and s == 1 then
-                                UpdateFlyoutArrow(button)
-                            end
-                        end
-                    end
-                end
-            end
+            Flyout.UpdateBars()
 
         elseif event == 'ACTIONBAR_SLOT_CHANGED' then
-            local slot = arg1
+            Flyout.HideFlyout()
             
-            HideFlyout()
-
-            local button = GetActionButton(slot)
+            local slot = arg1
+            local button = Flyout.GetActionButton(slot)
             if button then
                 local arrow = _G[button:GetName() .. 'FlyoutArrow']
                 if arrow then
                     if arrow:IsVisible() then
                         arrow:Hide()
-                        return
+                    end
+                end
+
+                local macro = GetActionText(slot)
+                if macro then
+                    local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
+                    local s = strfind(body, Flyout.COMMAND)
+                    if s and s == 1 then
+                        Flyout.UpdateFlyoutArrow(button)
                     end
                 end
             end
 
-            local macro = GetActionText(slot)
-            if macro then
-                local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                local s = strfind(body, Config.COMMAND)
-                if s and s == 1 then
-                    UpdateFlyoutArrow(button)
-                end
-            end
-        
         elseif event == 'ACTIONBAR_PAGE_CHANGED' or event == 'UPDATE_MACROS' then
-            HideFlyout()
-            
-            for _, bar in ipairs(ActionBars) do
-                for i = 1, 12 do
-                    local button = _G[bar .. "Button" .. i]
-                    local slot = ActionButton_GetPagedID(button)
-                    local arrow = _G[button:GetName() .. 'FlyoutArrow']
-                    if arrow then arrow:Hide() end
-                    if HasAction(slot) then
-                        local macro = GetActionText(slot)
-                        if macro then
-                            local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                            local s = strfind(body, Config.COMMAND)
-                            if s and s == 1 then
-                                UpdateFlyoutArrow(button)
-                            end
-                        end
-                    end
-                end
-            end
+            Flyout.HideFlyout()
+            Flyout.UpdateBars()
         end
     end
 )
