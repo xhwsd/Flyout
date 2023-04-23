@@ -14,9 +14,16 @@ Flyout is a World of Warcraft Vanilla (1.12) addon that mimicks the flyout featu
 
 3. Drag the newly created macro to one of your action bars and you're good to go
     
-    ![Flyout closed](screenshots/bar1.png)
-    ![Flyout closed](screenshots/bar2.png)
+    ![Flyout](screenshots/bar.png)
 
 ## Compatibility
 
-The addon uses features provided by the default action bar and action button logic implemented by Blizzard, meaning that any addon that overrides this logic or uses its own logic will not be compatible.
+The addon relies on functions provided by the default action bar and action button logic implemented by Blizzard. Some addons override these functions or use their own and therefore may not work together with this addons.
+
+Compatible addons:
+
+- ElvUI
+- pfUI
+- Roid-Macros
+- CleverMacro
+- MacroExtender
