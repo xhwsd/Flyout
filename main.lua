@@ -232,13 +232,13 @@ function UseAction(slot, checkCursor)
     end
 end
 
-Flyout:RegisterEvent('PLAYER_LOGIN')
+Flyout:RegisterEvent('VARIABLES_LOADED')
 Flyout:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 Flyout:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 Flyout:RegisterEvent('UPDATE_MACROS')
 Flyout:SetScript('OnEvent',
     function()
-        if event == 'PLAYER_LOGIN' then
+        if event == 'VARIABLES_LOADED' then
             for i = 1, Flyout.MAX_BUTTONS do
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
                 button:Hide()
@@ -264,7 +264,7 @@ Flyout:SetScript('OnEvent',
                         arrow:Hide()
                     end
                 end
-
+                
                 local macro = GetActionText(slot)
                 if macro then
                     local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))

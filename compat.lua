@@ -50,7 +50,7 @@ local function UpdateBars_PF()
                 local macro = GetActionText(action)
                 if macro then
                     local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                    local s = strfind(body, '/flyout')
+                    local s = strfind(body, Flyout.COMMAND)
                     if s and s == 1 then
                         Flyout.UpdateFlyoutArrow(button)
                     end
@@ -61,15 +61,14 @@ local function UpdateBars_PF()
 end
 
 -- override original functions
-local e = Flyout:GetScript('OnEvent')
-Flyout:RegisterEvent('ADDON_LOADED')
+local previous = Flyout:GetScript('OnEvent')
 Flyout:SetScript('OnEvent',
     function()
-        e()
+        previous()
 
-        if event == 'ADDON_LOADED' then
+        if event == 'VARIABLES_LOADED' then
             -- pfUI
-            if arg1 == 'pfUI' then
+            if IsAddOnLoaded('pfUI') then
                 Flyout.GetActionButton = GetActionButton_PF
                 Flyout.UpdateBars = UpdateBars_PF
             end
