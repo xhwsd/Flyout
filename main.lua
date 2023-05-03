@@ -179,6 +179,8 @@ function UseAction(slot, checkCursor)
                 local direction = Flyout.GetFlyoutDirection(button)
                 local offset = button:GetHeight() - 4
 
+                button:SetFrameStrata('HIGH')
+
                 body = strsub(body, e + 1)
                 for i, n in ipairs(strsplit(body, Flyout.DELIMITER)) do
                     local spell = Flyout.GetSpellSlotByName(n)
@@ -241,6 +243,7 @@ Flyout:SetScript('OnEvent',
         if event == 'VARIABLES_LOADED' then
             for i = 1, Flyout.MAX_BUTTONS do
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
+                button:SetFrameStrata('HIGH')
                 button:Hide()
 
                 button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
