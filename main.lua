@@ -173,7 +173,7 @@ function UseAction(slot, checkCursor)
                 local size = FlyoutButton1:GetWidth()
                 local offset = size
 
-                button:SetFrameStrata('HIGH')
+                button:SetFrameStrata('DIALOG')
 
                 body = strsub(body, e + 1)
                 for i, n in (strsplit(body, ';')) do
@@ -250,7 +250,7 @@ Flyout:SetScript('OnEvent',
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
                 button:SetHeight(size)
                 button:SetWidth(size)
-                button:SetFrameStrata('HIGH')
+                button:SetFrameStrata('DIALOG')
                 button:Hide()
 
                 button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
