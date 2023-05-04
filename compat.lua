@@ -1,10 +1,40 @@
 local _G = getfenv(0)
 
+-- utils
 local function modulo(a, b)
     return a - math.floor(a / b) * b
 end
 
--- pfUI compatibility
+-- Bongos
+local function GetActionButton_Bongos(action)
+    local button = _G['BActionButton' .. action]
+    if button then
+        return button
+    end
+    
+    return nil
+end
+
+local function UpdateBars_Bongos()
+    for action = 1, 120 do
+        local button = GetActionButton_Bongos(action)
+
+        if button then
+            if HasAction(action) then
+                local macro = GetActionText(action)
+                if macro then
+                    local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
+                    local s = strfind(body, Flyout.COMMAND)
+                    if s and s == 1 then
+                        Flyout.UpdateFlyoutArrow(button)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- pfUI
 local function GetActionButton_PF(action)
     local bar = nil
 
@@ -67,6 +97,12 @@ Flyout:SetScript('OnEvent',
         previous()
 
         if event == 'VARIABLES_LOADED' then
+            -- Bongos
+            if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
+                Flyout.GetActionButton = GetActionButton_Bongos
+                Flyout.UpdateBars = UpdateBars_Bongos
+            end
+            
             -- pfUI
             if IsAddOnLoaded('pfUI') then
                 Flyout.GetActionButton = GetActionButton_PF
