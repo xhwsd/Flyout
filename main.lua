@@ -2,18 +2,11 @@ Flyout = CreateFrame('Frame', 'Flyout')
 
 Flyout.COMMAND = '/flyout'
 Flyout.MAX_BUTTONS = 12
-Flyout.DELIMITER = ';'
 
 local _G = getfenv(0)
 
 local bars = { 'Action', 'BonusAction', 'MultiBarBottomLeft', 'MultiBarBottomRight', 'MultiBarRight', 'MultiBarLeft' }
 local active = nil
-
--- placeholder slash command
-SLASH_FLYOUT1 = Flyout.COMMAND
-SlashCmdList['FLYOUT'] = function()
-    return nil
-end
 
 local function strtrim(str)
     local _, e = string.find(str, "^%s*")
@@ -177,18 +170,17 @@ function UseAction(slot, checkCursor)
             local button = Flyout.GetActionButton(slot)
             if button then
                 local direction = Flyout.GetFlyoutDirection(button)
-                local offset = button:GetHeight() - 4
+                local size = FlyoutButton1:GetWidth()
+                local offset = size
 
                 button:SetFrameStrata('HIGH')
 
                 body = strsub(body, e + 1)
-                for i, n in ipairs(strsplit(body, Flyout.DELIMITER)) do
+                for i, n in (strsplit(body, ';')) do
                     local spell = Flyout.GetSpellSlotByName(n)
                     if spell then
                         local b = _G['FlyoutButton' .. i]
                         b:Show()
-                        b:SetHeight(button:GetHeight() - 4)
-                        b:SetWidth(button:GetWidth() - 4)
                         b:ClearAllPoints()
 
                         if direction == 'BOTTOM' then
@@ -226,7 +218,7 @@ function UseAction(slot, checkCursor)
                         b.texture:SetAllPoints()
                         b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-                        offset = offset + (button:GetHeight() - 4)
+                        offset = offset + size
                     end
                 end
             end
@@ -241,8 +233,23 @@ Flyout:RegisterEvent('UPDATE_MACROS')
 Flyout:SetScript('OnEvent',
     function()
         if event == 'VARIABLES_LOADED' then
+            -- initialize config
+            if not Flyout_Config then 
+                Flyout_Config = {
+                    ['button_size'] = 24,
+                    ['border_color'] = {
+                        ['r'] = 1.0,
+                        ['g'] = 1.0,
+                        ['b'] = 1.0
+                    },
+                }
+            end
+            
+            local size = Flyout_Config['button_size']
             for i = 1, Flyout.MAX_BUTTONS do
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
+                button:SetHeight(size)
+                button:SetWidth(size)
                 button:SetFrameStrata('HIGH')
                 button:Hide()
 
@@ -251,6 +258,7 @@ Flyout:SetScript('OnEvent',
                 button.border:SetTexCoord(0, 0.515625, 0, 1)
                 button.border:SetPoint('TOPLEFT', button, -1, 1)
                 button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
+                button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
             end
         
             Flyout.UpdateBars()
@@ -284,3 +292,54 @@ Flyout:SetScript('OnEvent',
         end
     end
 )
+
+-- customization stuff
+local function ShowColorPicker(r, g, b, callback)
+    ColorPickerFrame:SetColorRGB(r, g, b)
+    ColorPickerFrame.previousValues = {r, g, b}
+    ColorPickerFrame.func, ColorPickerFrame.cancelFunc = callback, callback
+    ColorPickerFrame:Hide()
+    ColorPickerFrame:Show()
+end
+
+local function ColorPickerCallback(restore)
+    local r, g, b
+    if restore then
+        r, g, b = unpack(restore)
+    else
+        r, g, b = ColorPickerFrame:GetColorRGB()
+    end
+
+    Flyout_Config['border_color']['r'] = r
+    Flyout_Config['border_color']['g'] = g
+    Flyout_Config['border_color']['b'] = b
+end
+
+SLASH_FLYOUT1 = Flyout.COMMAND
+SlashCmdList['FLYOUT'] = function(msg)
+    local args = {}
+    local i = 1
+    for arg in string.gfind(string.lower(msg), "%S+") do
+        args[i] = arg
+        i = i + 1
+    end
+
+    if not args[1] then
+        DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number] - set flyout button size")
+        DEFAULT_CHAT_FRAME:AddMessage("/flyout color - adjust the color of the flyout border")
+        DEFAULT_CHAT_FRAME:AddMessage("")
+        DEFAULT_CHAT_FRAME:AddMessage("Any changes will be applied after you reload your interface.")
+
+    elseif args[1] == 'size' then
+        if args[2] and type(tonumber(args[2])) == 'number' then
+            Flyout_Config['button_size'] = tonumber(args[2])
+            
+            DEFAULT_CHAT_FRAME:AddMessage("Flyout button size has been set to " .. args[2] .. ".")
+        end
+
+    elseif args[1] == 'color' then
+        ShowColorPicker(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'], ColorPickerCallback)
+        
+        DEFAULT_CHAT_FRAME:AddMessage("Use the color picker to pick a border color. Click 'Okay' once you're done or 'Cancel' to keep the default color.")
+    end
+end

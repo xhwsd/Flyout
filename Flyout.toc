@@ -3,6 +3,7 @@
 ## Author: luskanek
 ## Notes: Allows the player to create a flyout action bar button.
 ## Version: GIT
+## SavedVariablesPerCharacter: Flyout_Config
 
 main.lua
 compat.lua
