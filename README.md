@@ -18,12 +18,14 @@ Flyout is a World of Warcraft Vanilla (1.12) addon that mimicks the flyout featu
 
 ## Compatibility
 
-The addon relies on functions provided by the default action bar and action button logic implemented by Blizzard. Some addons override these functions or use their own and therefore may not work together with this addons.
+The addon relies on functions provided by the default action bar and action button logic implemented by Blizzard. Some addons override these functions or use their own and therefore may not work together with this addon.
 
 Compatible addons:
 
 - ElvUI
 - pfUI
+- Bartender2
+- Bongos
 - Roid-Macros
 - CleverMacro
 - MacroExtender
