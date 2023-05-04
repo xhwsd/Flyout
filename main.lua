@@ -150,7 +150,7 @@ end
 local _UseAction = UseAction
 function UseAction(slot, checkCursor)
     _UseAction(slot, checkCursor)
-    
+
     if active then
         if active == slot then
             Flyout.HideFlyout()
@@ -227,6 +227,7 @@ function UseAction(slot, checkCursor)
 end
 
 Flyout:RegisterEvent('VARIABLES_LOADED')
+Flyout:RegisterEvent('PLAYER_ENTERING_WORLD')
 Flyout:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 Flyout:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 Flyout:RegisterEvent('UPDATE_MACROS')
@@ -260,7 +261,8 @@ Flyout:SetScript('OnEvent',
                 button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
                 button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
             end
-        
+
+        elseif event == 'PLAYER_ENTERING_WORLD' then 
             Flyout.UpdateBars()
 
         elseif event == 'ACTIONBAR_SLOT_CHANGED' then
