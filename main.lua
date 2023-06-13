@@ -172,8 +172,14 @@ function UseAction(slot, checkCursor)
                 local direction = Flyout.GetFlyoutDirection(button)
                 local size = FlyoutButton1:GetWidth()
                 local offset = size
+                local sticky = false
 
                 button:SetFrameStrata('DIALOG')
+
+                if strfind(body, "%[sticky%]") then
+                    s, e = strfind(body, "%[sticky%]")
+                    sticky = true
+                end
 
                 body = strsub(body, e + 1)
                 for i, n in (strsplit(body, ';')) do
@@ -197,7 +203,11 @@ function UseAction(slot, checkCursor)
                             function()
                                 CastSpell(spell, 'spell')
 
-                                Flyout.HideFlyout()
+                                if sticky then
+                                    b:SetChecked(0)
+                                else
+                                    Flyout.HideFlyout()
+                                end
                             end
                         )
                         b:SetScript('OnEnter',
@@ -245,7 +255,7 @@ Flyout:SetScript('OnEvent',
                     },
                 }
             end
-            
+
             local size = Flyout_Config['button_size']
             for i = 1, Flyout.MAX_BUTTONS do
                 local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
