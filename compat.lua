@@ -91,23 +91,20 @@ local function UpdateBars_PF()
 end
 
 -- override original functions
-local previous = Flyout:GetScript('OnEvent')
-Flyout:SetScript('OnEvent',
+local handler = CreateFrame('Frame')
+handler:RegisterEvent('VARIABLES_LOADED')
+handler:SetScript('OnEvent',
     function()
-        previous()
-
-        if event == 'VARIABLES_LOADED' then
-            -- Bongos
-            if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
-                Flyout.GetActionButton = GetActionButton_Bongos
-                Flyout.UpdateBars = UpdateBars_Bongos
-            end
-            
-            -- pfUI
-            if IsAddOnLoaded('pfUI') then
-                Flyout.GetActionButton = GetActionButton_PF
-                Flyout.UpdateBars = UpdateBars_PF
-            end
+        -- Bongos
+        if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
+            Flyout.GetActionButton = GetActionButton_Bongos
+            Flyout.UpdateBars = UpdateBars_Bongos
+        end
+        
+        -- pfUI
+        if IsAddOnLoaded('pfUI') then
+            Flyout.GetActionButton = GetActionButton_PF
+            Flyout.UpdateBars = UpdateBars_PF
         end
     end
 )
