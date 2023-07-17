@@ -10,6 +10,7 @@ local bars = {
 }
 local active = nil
 
+-- helper functions
 local function strtrim(str)
    local _, e = string.find(str, "^%s*")
    local s, _ = string.find(str, "%s*$", e + 1)
@@ -24,6 +25,35 @@ local function strsplit(str, delimiter)
       end
    )
    return t
+end
+
+function Flyout_Init()
+   if not Flyout_Config then 
+      Flyout_Config = {
+         ['button_size'] = 24,
+         ['border_color'] = {
+            ['r'] = 1.0,
+            ['g'] = 1.0,
+            ['b'] = 1.0
+         },
+      }
+   end
+   
+   local size = Flyout_Config['button_size']
+   for i = 1, 12 do
+      local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
+      button:SetHeight(size)
+      button:SetWidth(size)
+      button:SetFrameStrata('DIALOG')
+      button:Hide()
+      
+      button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
+      button.border:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
+      button.border:SetTexCoord(0, 0.515625, 0, 1)
+      button.border:SetPoint('TOPLEFT', button, -1, 1)
+      button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
+      button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
+   end
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
@@ -136,6 +166,27 @@ function Flyout_UpdateBars()
    end
 end
 
+function Flyout_UpdateBarButton(slot)
+   local button = Flyout_GetActionButton(slot)
+   if button then
+      local arrow = _G[button:GetName() .. 'FlyoutArrow']
+      if arrow then
+         if arrow:IsVisible() then
+            arrow:Hide()
+         end
+      end
+      
+      local macro = GetActionText(slot)
+      if macro then
+         local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
+         local s = strfind(body, "/flyout")
+         if s and s == 1 then
+            Flyout_UpdateFlyoutArrow(button)
+         end
+      end
+   end
+end
+
 function Flyout_HideFlyout()
    for i = 1, 12 do
       local button = _G['FlyoutButton' .. i]
@@ -147,6 +198,23 @@ function Flyout_HideFlyout()
    end
    
    active = nil
+end
+
+function Flyout_OnEvent()
+   if event == 'VARIABLES_LOADED' then
+      Flyout_Init()
+      
+   elseif event == 'PLAYER_ENTERING_WORLD' then 
+      Flyout_UpdateBars()
+      
+   elseif event == 'ACTIONBAR_SLOT_CHANGED' then
+      Flyout_HideFlyout()
+      Flyout_UpdateBarButton(arg1)
+      
+   elseif event == 'ACTIONBAR_PAGE_CHANGED' or event == 'UPDATE_MACROS' then
+      Flyout_HideFlyout()
+      Flyout_UpdateBars()
+   end
 end
 
 local _UseAction = UseAction
@@ -244,69 +312,7 @@ handler:RegisterEvent('PLAYER_ENTERING_WORLD')
 handler:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 handler:RegisterEvent('UPDATE_MACROS')
-handler:SetScript('OnEvent',
-   function()
-      if event == 'VARIABLES_LOADED' then
-         -- initialize config
-         if not Flyout_Config then 
-            Flyout_Config = {
-               ['button_size'] = 24,
-               ['border_color'] = {
-                  ['r'] = 1.0,
-                  ['g'] = 1.0,
-                  ['b'] = 1.0
-               },
-            }
-         end
-         
-         local size = Flyout_Config['button_size']
-         for i = 1, 12 do
-            local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
-            button:SetHeight(size)
-            button:SetWidth(size)
-            button:SetFrameStrata('DIALOG')
-            button:Hide()
-            
-            button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
-            button.border:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
-            button.border:SetTexCoord(0, 0.515625, 0, 1)
-            button.border:SetPoint('TOPLEFT', button, -1, 1)
-            button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
-            button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
-         end
-         
-      elseif event == 'PLAYER_ENTERING_WORLD' then 
-         Flyout_UpdateBars()
-         
-      elseif event == 'ACTIONBAR_SLOT_CHANGED' then
-         Flyout_HideFlyout()
-         
-         local slot = arg1
-         local button = Flyout_GetActionButton(slot)
-         if button then
-            local arrow = _G[button:GetName() .. 'FlyoutArrow']
-            if arrow then
-               if arrow:IsVisible() then
-                  arrow:Hide()
-               end
-            end
-            
-            local macro = GetActionText(slot)
-            if macro then
-               local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-               local s = strfind(body, "/flyout")
-               if s and s == 1 then
-                  Flyout_UpdateFlyoutArrow(button)
-               end
-            end
-         end
-         
-      elseif event == 'ACTIONBAR_PAGE_CHANGED' or event == 'UPDATE_MACROS' then
-         Flyout_HideFlyout()
-         Flyout_UpdateBars()
-      end
-   end
-)
+handler:SetScript('OnEvent', Flyout_OnEvent)
 
 -- customization stuff
 local function ShowColorPicker(r, g, b, callback)
