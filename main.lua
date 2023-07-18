@@ -1,5 +1,6 @@
 local _G = getfenv(0)
 
+local ref = nil
 local bars = {
    'Action',
    'BonusAction',
@@ -8,7 +9,6 @@ local bars = {
    'MultiBarRight',
    'MultiBarLeft'
 }
-local active = nil
 
 -- helper functions
 local function strtrim(str)
@@ -54,6 +54,21 @@ function Flyout_Init()
       button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
       button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
    end
+
+   ref = _G['FlyoutButton1']
+   ref.elapsed = 0
+   ref.active = nil
+   ref.sticky = false
+   ref:SetScript('OnUpdate',
+      function()
+         this.elapsed = this.elapsed + arg1
+         if not this.sticky and this.elapsed >= 3 then
+		      this.elapsed = 0
+            
+            Flyout_HideFlyout()
+         end
+      end
+   )
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
@@ -197,7 +212,7 @@ function Flyout_HideFlyout()
       end
    end
    
-   active = nil
+   ref.active = nil
 end
 
 function Flyout_OnEvent()
@@ -221,8 +236,8 @@ local _UseAction = UseAction
 function UseAction(slot, checkCursor)
    _UseAction(slot, checkCursor)
    
-   if active then
-      if active == slot then
+   if ref.active then
+      if ref.active == slot then
          Flyout_HideFlyout()
          return
       end
@@ -230,7 +245,7 @@ function UseAction(slot, checkCursor)
       Flyout_HideFlyout()
    end
    
-   active = slot
+   ref.active = slot
    
    local macro = GetActionText(slot)
    if macro then
@@ -242,13 +257,15 @@ function UseAction(slot, checkCursor)
             local direction = Flyout_GetFlyoutDirection(button)
             local size = Flyout_Config['button_size']
             local offset = size
-            local sticky = false
+            
+            ref.sticky = false
+            ref.elapsed = 0
             
             button:SetFrameStrata('DIALOG')
             
             if strfind(body, "%[sticky%]") then
                s, e = strfind(body, "%[sticky%]")
-               sticky = true
+               ref.sticky = true
             end
             
             body = strsub(body, e + 1)
@@ -273,7 +290,9 @@ function UseAction(slot, checkCursor)
                      function()
                         CastSpell(spell, 'spell')
                         
-                        if sticky then
+                        ref.elapsed = 0
+
+                        if ref.sticky then
                            b:SetChecked(0)
                         else
                            Flyout_HideFlyout()
