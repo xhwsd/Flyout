@@ -6,4 +6,6 @@
 ## SavedVariablesPerCharacter: Flyout_Config
 
 main.lua
+options.lua
+
 compat.lua
