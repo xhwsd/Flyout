@@ -1,8 +1,19 @@
 local _G = getfenv(0)
 
+-- upvalues
+local GetActionText = GetActionText
+local HasAction = HasAction
+local GetMacroIndexByName = GetMacroIndexByName
+local GetMacroInfo = GetMacroInfo
+local IsAddOnLoaded = IsAddOnLoaded
+
+local floor = math.floor
+
+local strfind = string.find
+
 -- utils
 local function modulo(a, b)
-    return a - math.floor(a / b) * b
+    return a - floor(a / b) * b
 end
 
 -- Bongos

@@ -10,18 +10,39 @@ local bars = {
    'MultiBarLeft'
 }
 
+-- upvalues
+local ActionButton_GetPagedID = ActionButton_GetPagedID
+local GameTooltip_SetDefaultAnchor = GameTooltip_SetDefaultAnchor
+local GetActionText = GetActionText
+local GetNumSpellTabs = GetNumSpellTabs
+local GetSpellName = GetSpellName
+local GetSpellTabInfo = GetSpellTabInfo
+local GetScreenHeight = GetScreenHeight
+local GetScreenWidth = GetScreenWidth
+local HasAction = HasAction
+local GetMacroIndexByName = GetMacroIndexByName
+local GetMacroInfo = GetMacroInfo
+
+local insert = table.insert
+
+local strfind = string.find
+local strgfind = string.gfind
+local strgsub = string.gsub
+local strlower = string.lower
+local strsub = string.sub
+
 -- helper functions
 local function strtrim(str)
-   local _, e = string.find(str, "^%s*")
-   local s, _ = string.find(str, "%s*$", e + 1)
-   return string.sub(str, e + 1, s - 1)
+   local _, e = strfind(str, "^%s*")
+   local s, _ = strfind(str, "%s*$", e + 1)
+   return strsub(str, e + 1, s - 1)
 end
 
 local function strsplit(str, delimiter)
    local t = {}
-   gsub(str, '([^' .. delimiter .. ']+)',
+   strgsub(str, '([^' .. delimiter .. ']+)',
       function(value)
-         table.insert(t, strtrim(value))
+         insert(t, strtrim(value))
       end
    )
    return t
@@ -359,7 +380,7 @@ SLASH_FLYOUT1 = "/flyout"
 SlashCmdList['FLYOUT'] = function(msg)
    local args = {}
    local i = 1
-   for arg in string.gfind(string.lower(msg), "%S+") do
+   for arg in strgfind(strlower(msg), "%S+") do
       args[i] = arg
       i = i + 1
    end
