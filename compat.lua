@@ -22,7 +22,7 @@ local function GetActionButton_Bongos(action)
     if button then
         return button
     end
-    
+
     return nil
 end
 
@@ -70,10 +70,10 @@ local function GetActionButton_PF(action)
     else
         bar = 'pfActionBarMain'
     end
-    
+
     local i = 1
     if modulo(action, 12) ~= 0 then i = modulo(action, 12) else i = 12 end
-    
+
     local button = _G[bar .. 'Button' .. i]
     if button then
         return button
@@ -111,7 +111,7 @@ handler:SetScript('OnEvent',
             Flyout_GetActionButton = GetActionButton_Bongos
             Flyout_UpdateBars = UpdateBars_Bongos
         end
-        
+
         -- pfUI
         if IsAddOnLoaded('pfUI') then
             Flyout_GetActionButton = GetActionButton_PF

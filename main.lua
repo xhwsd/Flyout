@@ -49,7 +49,7 @@ local function strsplit(str, delimiter)
 end
 
 function Flyout_Init()
-   if not Flyout_Config then 
+   if not Flyout_Config then
       Flyout_Config = {
          ['button_size'] = 24,
          ['border_color'] = {
@@ -59,7 +59,7 @@ function Flyout_Init()
          },
       }
    end
-   
+
    local size = Flyout_Config['button_size']
    for i = 1, 12 do
       local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
@@ -67,7 +67,7 @@ function Flyout_Init()
       button:SetWidth(size)
       button:SetFrameStrata('DIALOG')
       button:Hide()
-      
+
       button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
       button.border:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
       button.border:SetTexCoord(0, 0.515625, 0, 1)
@@ -85,7 +85,7 @@ function Flyout_Init()
          this.elapsed = this.elapsed + arg1
          if not this.sticky and this.elapsed >= 3 then
 		      this.elapsed = 0
-            
+
             Flyout_HideFlyout()
          end
       end
@@ -97,7 +97,7 @@ function Flyout_GetSpellSlotByName(name)
    name = strlower(name)
    local b, _, rank = strfind(name, "%(%s*rank%s+(%d+)%s*%)")
    if b then name = (b > 1) and strtrim(strsub(name, 1, b - 1)) or "" end
-   
+
    for tabIndex = GetNumSpellTabs(), 1, -1 do
       local _, _, offset, count = GetSpellTabInfo(tabIndex)
       for index = offset + count, offset + 1, -1 do
@@ -128,9 +128,9 @@ function Flyout_GetFlyoutDirection(button)
    if bar:GetWidth() > bar:GetHeight() then
       horizontal = true
    end
-   
+
    local direction = horizontal and 'TOP' or 'LEFT'
-   
+
    local centerX, centerY = button:GetCenter()
    if centerX and centerY then
       if horizontal then
@@ -146,32 +146,32 @@ end
 
 function Flyout_UpdateFlyoutArrow(button)
    if not button then return end
-   
+
    local direction = Flyout_GetFlyoutDirection(button)
-   
+
    button.arrow = _G[button:GetName() .. 'FlyoutArrow'] or button:CreateTexture(button:GetName() .. 'FlyoutArrow', 'OVERLAY')
    button.arrow:ClearAllPoints()
    button.arrow:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
    button.arrow:Show()
-   
+
    if direction == 'BOTTOM' then
       button.arrow:SetHeight(12)
       button.arrow:SetWidth(20)
       button.arrow:SetTexCoord(0.5312, 0.8125, 0.3750, 0)
       button.arrow:SetPoint('BOTTOM', button, 0, -5)
-      
+
    elseif direction == 'LEFT' then
       button.arrow:SetHeight(20)
       button.arrow:SetWidth(12)
       button.arrow:SetTexCoord(0.5312, 0.7031, 0.3750, 1)
       button.arrow:SetPoint('LEFT', button, -5, 0)
-      
+
    elseif direction == 'RIGHT' then
       button.arrow:SetHeight(20)
       button.arrow:SetWidth(12)
       button.arrow:SetTexCoord(0.7031, 0.5312, 0.3750, 1)
       button.arrow:SetPoint('RIGHT', button, 5, 0)
-      
+
    else
       button.arrow:SetHeight(12)
       button.arrow:SetWidth(20)
@@ -186,7 +186,7 @@ function Flyout_UpdateBars()
          local button = _G[bar .. "Button" .. i]
          local arrow = _G[button:GetName() .. 'FlyoutArrow']
          if arrow then arrow:Hide() end
-         
+
          local slot = ActionButton_GetPagedID(button)
          if HasAction(slot) then
             local macro = GetActionText(slot)
@@ -211,7 +211,7 @@ function Flyout_UpdateBarButton(slot)
             arrow:Hide()
          end
       end
-      
+
       local macro = GetActionText(slot)
       if macro then
          local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
@@ -232,21 +232,21 @@ function Flyout_HideFlyout()
          _G[button:GetName() .. 'NormalTexture']:SetTexture(nil)
       end
    end
-   
+
    ref.active = nil
 end
 
 function Flyout_OnEvent()
    if event == 'VARIABLES_LOADED' then
       Flyout_Init()
-      
-   elseif event == 'PLAYER_ENTERING_WORLD' then 
+
+   elseif event == 'PLAYER_ENTERING_WORLD' then
       Flyout_UpdateBars()
-      
+
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
       Flyout_HideFlyout()
       Flyout_UpdateBarButton(arg1)
-      
+
    elseif event == 'ACTIONBAR_PAGE_CHANGED' or event == 'UPDATE_MACROS' then
       Flyout_HideFlyout()
       Flyout_UpdateBars()
@@ -256,18 +256,18 @@ end
 local _UseAction = UseAction
 function UseAction(slot, checkCursor)
    _UseAction(slot, checkCursor)
-   
+
    if ref.active then
       if ref.active == slot then
          Flyout_HideFlyout()
          return
       end
-      
+
       Flyout_HideFlyout()
    end
-   
+
    ref.active = slot
-   
+
    local macro = GetActionText(slot)
    if macro then
       local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
@@ -278,17 +278,17 @@ function UseAction(slot, checkCursor)
             local direction = Flyout_GetFlyoutDirection(button)
             local size = Flyout_Config['button_size']
             local offset = size
-            
+
             ref.sticky = false
             ref.elapsed = 0
-            
+
             button:SetFrameStrata('DIALOG')
-            
+
             if strfind(body, "%[sticky%]") then
                s, e = strfind(body, "%[sticky%]")
                ref.sticky = true
             end
-            
+
             body = strsub(body, e + 1)
             for i, n in (strsplit(body, ';')) do
                local spell = Flyout_GetSpellSlotByName(n)
@@ -296,7 +296,7 @@ function UseAction(slot, checkCursor)
                   local b = _G['FlyoutButton' .. i]
                   b:Show()
                   b:ClearAllPoints()
-                  
+
                   if direction == 'BOTTOM' then
                      b:SetPoint('BOTTOM', button, 0, -offset)
                   elseif direction == 'LEFT' then
@@ -306,11 +306,11 @@ function UseAction(slot, checkCursor)
                   else
                      b:SetPoint('TOP', button, 0, offset)
                   end
-                  
+
                   b:SetScript('OnClick',
                      function()
                         CastSpell(spell, 'spell')
-                        
+
                         ref.elapsed = 0
 
                         if ref.sticky then
@@ -332,12 +332,12 @@ function UseAction(slot, checkCursor)
                         GameTooltip:Hide()
                      end
                   )
-         
+
                   b.texture = _G[b:GetName() .. 'NormalTexture']
                   b.texture:SetTexture(GetSpellTexture(spell, 'spell'))
                   b.texture:SetAllPoints()
                   b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                  
+
                   offset = offset + size
                end
             end
@@ -370,7 +370,7 @@ local function ColorPickerCallback(restore)
    else
       r, g, b = ColorPickerFrame:GetColorRGB()
    end
-   
+
    Flyout_Config['border_color']['r'] = r
    Flyout_Config['border_color']['g'] = g
    Flyout_Config['border_color']['b'] = b
@@ -384,23 +384,23 @@ SlashCmdList['FLYOUT'] = function(msg)
       args[i] = arg
       i = i + 1
    end
-   
+
    if not args[1] then
       DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number] - set flyout button size")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout color - adjust the color of the flyout border")
       DEFAULT_CHAT_FRAME:AddMessage("")
       DEFAULT_CHAT_FRAME:AddMessage("Any changes will be applied after you reload your interface.")
-      
+
    elseif args[1] == 'size' then
       if args[2] and type(tonumber(args[2])) == 'number' then
          Flyout_Config['button_size'] = tonumber(args[2])
-         
+
          DEFAULT_CHAT_FRAME:AddMessage("Flyout button size has been set to " .. args[2] .. ".")
       end
-      
+
    elseif args[1] == 'color' then
       ShowColorPicker(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'], ColorPickerCallback)
-      
+
       DEFAULT_CHAT_FRAME:AddMessage("Use the color picker to pick a border color. Click 'Okay' once you're done or 'Cancel' to keep the default color.")
    end
 end
