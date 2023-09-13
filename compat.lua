@@ -24,9 +24,9 @@ local function UpdateBars_Bongos()
                 local macro = GetActionText(action)
                 if macro then
                     local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                    local s = strfind(body, Flyout.COMMAND)
+                    local s = strfind(body, '/flyout')
                     if s and s == 1 then
-                        Flyout.UpdateFlyoutArrow(button)
+                        Flyout_UpdateFlyoutArrow(button)
                     end
                 end
             end
@@ -80,9 +80,9 @@ local function UpdateBars_PF()
                 local macro = GetActionText(action)
                 if macro then
                     local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                    local s = strfind(body, Flyout.COMMAND)
+                    local s = strfind(body, '/flyout')
                     if s and s == 1 then
-                        Flyout.UpdateFlyoutArrow(button)
+                        Flyout_UpdateFlyoutArrow(button)
                     end
                 end
             end
@@ -97,14 +97,14 @@ handler:SetScript('OnEvent',
     function()
         -- Bongos
         if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
-            Flyout.GetActionButton = GetActionButton_Bongos
-            Flyout.UpdateBars = UpdateBars_Bongos
+            Flyout_GetActionButton = GetActionButton_Bongos
+            Flyout_UpdateBars = UpdateBars_Bongos
         end
         
         -- pfUI
         if IsAddOnLoaded('pfUI') then
-            Flyout.GetActionButton = GetActionButton_PF
-            Flyout.UpdateBars = UpdateBars_PF
+            Flyout_GetActionButton = GetActionButton_PF
+            Flyout_UpdateBars = UpdateBars_PF
         end
     end
 )
