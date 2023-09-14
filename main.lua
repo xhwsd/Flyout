@@ -1,6 +1,6 @@
 local _G = getfenv(0)
 
-local ref = nil
+local active = nil
 local bars = {
    'Action',
    'BonusAction',
@@ -67,16 +67,22 @@ local function GetSpellSlotByName(name)
 end
 
 local function HideFlyout()
-   for i = 1, 12 do
+   local i = 0
+   while true do
+      i = i + 1
+
       local button = _G['FlyoutButton' .. i]
       if button then
          button:SetChecked(false)
          button:Hide()
+
          _G[button:GetName() .. 'NormalTexture']:SetTexture(nil)
+      else
+         break
       end
    end
 
-   ref.active = nil
+   active = nil
 end
 
 local function GetFlyoutDirection(button)
@@ -133,37 +139,6 @@ local function Init()
          },
       }
    end
-
-   local size = Flyout_Config['button_size']
-   for i = 1, 12 do
-      local button = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'ActionButtonTemplate')
-      button:SetHeight(size)
-      button:SetWidth(size)
-      button:SetFrameStrata('DIALOG')
-      button:Hide()
-
-      button.border = button:CreateTexture('FlyoutButton' .. i .. 'BorderTexture', 'BACKGROUND')
-      button.border:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
-      button.border:SetTexCoord(0, 0.515625, 0, 1)
-      button.border:SetPoint('TOPLEFT', button, -1, 1)
-      button.border:SetPoint('BOTTOMRIGHT', button, 1, -1)
-      button.border:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
-   end
-
-   ref = _G['FlyoutButton1']
-   ref.elapsed = 0
-   ref.active = nil
-   ref.sticky = false
-   ref:SetScript('OnUpdate',
-      function()
-         this.elapsed = this.elapsed + arg1
-         if not this.sticky and this.elapsed >= 3 then
-		      this.elapsed = 0
-
-            HideFlyout()
-         end
-      end
-   )
 end
 
 local function HandleEvent()
@@ -172,6 +147,7 @@ local function HandleEvent()
    elseif event == 'PLAYER_ENTERING_WORLD' then
       Flyout_UpdateBars()
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
+      HideFlyout()
       UpdateBarButton(arg1)
    else
       HideFlyout()
@@ -253,8 +229,8 @@ local _UseAction = UseAction
 function UseAction(slot, checkCursor)
    _UseAction(slot, checkCursor)
 
-   if ref.active then
-      if ref.active == slot then
+   if active then
+      if active == slot then
          HideFlyout()
          return
       end
@@ -262,7 +238,7 @@ function UseAction(slot, checkCursor)
       HideFlyout()
    end
 
-   ref.active = slot
+   active = slot
 
    local macro = GetActionText(slot)
    if macro then
@@ -275,23 +251,17 @@ function UseAction(slot, checkCursor)
             local size = Flyout_Config['button_size']
             local offset = size
 
-            ref.sticky = false
-            ref.elapsed = 0
-
-            button:SetFrameStrata('DIALOG')
-
-            if strfind(body, "%[sticky%]") then
-               s, e = strfind(body, "%[sticky%]")
-               ref.sticky = true
-            end
-
             body = strsub(body, e + 1)
             for i, n in (strsplit(body, ';')) do
                local spell = GetSpellSlotByName(n)
                if spell then
-                  local b = _G['FlyoutButton' .. i]
+                  local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
                   b:Show()
                   b:ClearAllPoints()
+                  b:SetWidth(Flyout_Config['button_size'])
+                  b:SetHeight(Flyout_Config['button_size'])
+
+                  _G[b:GetName() .. 'BorderTexture']:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
 
                   if direction == 'BOTTOM' then
                      b:SetPoint('BOTTOM', button, 0, -offset)
@@ -306,14 +276,6 @@ function UseAction(slot, checkCursor)
                   b:SetScript('OnClick',
                      function()
                         CastSpell(spell, 'spell')
-
-                        ref.elapsed = 0
-
-                        if ref.sticky then
-                           b:SetChecked(0)
-                        else
-                           HideFlyout()
-                        end
                      end
                   )
                   b:SetScript('OnEnter',
@@ -331,7 +293,8 @@ function UseAction(slot, checkCursor)
 
                   b.texture = _G[b:GetName() .. 'NormalTexture']
                   b.texture:SetTexture(GetSpellTexture(spell, 'spell'))
-                  b.texture:SetAllPoints()
+                  b.texture:SetPoint('TOPLEFT', b, 1, -1)
+                  b.texture:SetPoint('BOTTOMRIGHT', b, -1, 1)
                   b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
                   offset = offset + size
