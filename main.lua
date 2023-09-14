@@ -276,6 +276,8 @@ function UseAction(slot, checkCursor)
                   b:SetScript('OnClick',
                      function()
                         CastSpell(spell, 'spell')
+
+                        HideFlyout()
                      end
                   )
                   b:SetScript('OnEnter',
@@ -288,6 +290,13 @@ function UseAction(slot, checkCursor)
                   b:SetScript('OnLeave',
                      function()
                         GameTooltip:Hide()
+
+                        local focus = GetMouseFocus()
+                        if focus then
+                           if not strfind(focus:GetName(), 'Flyout') then
+                              HideFlyout()
+                           end
+                        end
                      end
                   )
 
