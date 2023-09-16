@@ -17,9 +17,9 @@ local function ColorPickerCallback(restore)
       r, g, b = ColorPickerFrame:GetColorRGB()
    end
 
-   Flyout_Config['border_color']['r'] = r
-   Flyout_Config['border_color']['g'] = g
-   Flyout_Config['border_color']['b'] = b
+   Flyout_Config['border_color'][1] = r
+   Flyout_Config['border_color'][2] = g
+   Flyout_Config['border_color'][3] = b
 end
 
 SLASH_FLYOUT1 = "/flyout"
@@ -42,7 +42,7 @@ SlashCmdList['FLYOUT'] = function(msg)
          DEFAULT_CHAT_FRAME:AddMessage("Flyout button size has been set to " .. args[2] .. ".")
       end
    elseif args[1] == 'color' then
-      ShowColorPicker(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'], ColorPickerCallback)
+      ShowColorPicker(Flyout_Config['border_color'][1], Flyout_Config['border_color'][2], Flyout_Config['border_color'][3], ColorPickerCallback)
 
       DEFAULT_CHAT_FRAME:AddMessage("Use the color picker to pick a border color. Click 'Okay' once you're done or 'Cancel' to keep the current color.")
    end

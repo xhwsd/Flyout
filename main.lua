@@ -132,11 +132,7 @@ local function Init()
    if not Flyout_Config then
       Flyout_Config = {
          ['button_size'] = 24,
-         ['border_color'] = {
-            ['r'] = 1.0,
-            ['g'] = 1.0,
-            ['b'] = 1.0
-         },
+         ['border_color'] = { 0, 0, 0 }
       }
    end
 end
@@ -200,27 +196,25 @@ function Flyout_UpdateFlyoutArrow(button)
    button.arrow:Show()
 
    if direction == 'BOTTOM' then
-      button.arrow:SetHeight(12)
-      button.arrow:SetWidth(20)
-      button.arrow:SetTexCoord(0.5312, 0.8125, 0.3750, 0)
+      button.arrow:SetWidth(18)
+      button.arrow:SetHeight(10)
+      button.arrow:SetTexCoord(0, 0.565, 0.315, 0)
       button.arrow:SetPoint('BOTTOM', button, 0, -5)
-
    elseif direction == 'LEFT' then
-      button.arrow:SetHeight(20)
-      button.arrow:SetWidth(12)
-      button.arrow:SetTexCoord(0.5312, 0.7031, 0.3750, 1)
+      button.arrow:SetWidth(10)
+      button.arrow:SetHeight(18)
+      button.arrow:SetTexCoord(0, 0.315, 0.375, 1)
       button.arrow:SetPoint('LEFT', button, -5, 0)
-
    elseif direction == 'RIGHT' then
-      button.arrow:SetHeight(20)
-      button.arrow:SetWidth(12)
-      button.arrow:SetTexCoord(0.7031, 0.5312, 0.3750, 1)
+      button.arrow:SetWidth(10)
+      button.arrow:SetHeight(18)
+      button.arrow:SetTexCoord(0.315, 0, 0.375, 1)
       button.arrow:SetPoint('RIGHT', button, 5, 0)
 
    else
-      button.arrow:SetHeight(12)
-      button.arrow:SetWidth(20)
-      button.arrow:SetTexCoord(0.5315, 0.8125, 0, 0.3750)
+      button.arrow:SetWidth(18)
+      button.arrow:SetHeight(10)
+      button.arrow:SetTexCoord(0, 0.565, 0, 0.315)
       button.arrow:SetPoint('TOP', button, 0, 5)
    end
 end
@@ -260,8 +254,7 @@ function UseAction(slot, checkCursor)
                   b:ClearAllPoints()
                   b:SetWidth(Flyout_Config['button_size'])
                   b:SetHeight(Flyout_Config['button_size'])
-
-                  _G[b:GetName() .. 'BorderTexture']:SetVertexColor(Flyout_Config['border_color']['r'], Flyout_Config['border_color']['g'], Flyout_Config['border_color']['b'])
+                  b:SetBackdropColor(Flyout_Config['border_color'][1], Flyout_Config['border_color'][2], Flyout_Config['border_color'][3])
 
                   if direction == 'BOTTOM' then
                      b:SetPoint('BOTTOM', button, 0, -offset)
