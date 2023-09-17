@@ -34,6 +34,7 @@ SlashCmdList['FLYOUT'] = function(msg)
    if not args[1] then
       DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number] - set flyout button size")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout color - adjust the color of the flyout border")
+      DEFAULT_CHAT_FRAME:AddMessage("/flyout reset - reset config to default values")
       DEFAULT_CHAT_FRAME:AddMessage(" ")
    elseif args[1] == 'size' then
       if args[2] and type(tonumber(args[2])) == 'number' then
@@ -45,5 +46,13 @@ SlashCmdList['FLYOUT'] = function(msg)
       ShowColorPicker(Flyout_Config['border_color'][1], Flyout_Config['border_color'][2], Flyout_Config['border_color'][3], ColorPickerCallback)
 
       DEFAULT_CHAT_FRAME:AddMessage("Use the color picker to pick a border color. Click 'Okay' once you're done or 'Cancel' to keep the current color.")
+   elseif args[1] == 'reset' then
+      Flyout_Config = nil
+      Flyout_Config = {
+         ['button_size'] = 24,
+         ['border_color'] = { 0, 0, 0 }
+      }
+
+      DEFAULT_CHAT_FRAME:AddMessage("Flyout config has been reset.")
    end
 end
