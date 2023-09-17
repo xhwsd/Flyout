@@ -7,9 +7,7 @@ Flyout is a World of Warcraft Vanilla (1.12) addon that mimicks the flyout featu
 1. Open your macros and create a new macro
 2. In the macro body, start by typing `/flyout` and then the names of the spells separated by a semicolon
 
-   - The maximum number of spells is 12
    - To use a specific rank, you can write `Frostbolt(Rank 1)` (omitting the rank will use the highest available)
-   - To leave the flyout opened even after you select one of the spells, use the 'sticky' macro condition (`/flyout [sticky] Disenchant; Enchanting`)
    - **Do not insert a semicolon after the last spell name**
 
    ![Macro body example](screenshots/macro.png)
