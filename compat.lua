@@ -12,37 +12,13 @@ local floor = math.floor
 local strfind = string.find
 
 -- utils
-local function modulo(a, b)
+local function modulus(a, b)
     return a - floor(a / b) * b
 end
 
 -- Bongos
 local function GetActionButton_Bongos(action)
-    local button = _G['BActionButton' .. action]
-    if button then
-        return button
-    end
-
-    return nil
-end
-
-local function UpdateBars_Bongos()
-    for action = 1, 120 do
-        local button = GetActionButton_Bongos(action)
-
-        if button then
-            if HasAction(action) then
-                local macro = GetActionText(action)
-                if macro then
-                    local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                    local s = strfind(body, '/flyout')
-                    if s and s == 1 then
-                        Flyout_UpdateFlyoutArrow(button)
-                    end
-                end
-            end
-        end
-    end
+    return _G['BActionButton' .. action]
 end
 
 -- pfUI
@@ -72,44 +48,22 @@ local function GetActionButton_PF(action)
     end
 
     local i = 1
-    if modulo(action, 12) ~= 0 then i = modulo(action, 12) else i = 12 end
-
-    local button = _G[bar .. 'Button' .. i]
-    if button then
-        return button
+    if modulus(action, 12) ~= 0 then
+        i = modulus(action, 12)
+    else
+        i = 12
     end
 
-    return nil
-end
-
-local function UpdateBars_PF()
-    for action = 1, 120 do
-        local button = GetActionButton_PF(action)
-
-        if button then
-            if HasAction(action) then
-                local macro = GetActionText(action)
-                if macro then
-                    local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-                    local s = strfind(body, '/flyout')
-                    if s and s == 1 then
-                        Flyout_UpdateFlyoutArrow(button)
-                    end
-                end
-            end
-        end
-    end
+    return _G[bar .. 'Button' .. i]
 end
 
 local function HandleEvent()
     if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
         Flyout_GetActionButton = GetActionButton_Bongos
-        Flyout_UpdateBars = UpdateBars_Bongos
     end
 
     if IsAddOnLoaded('pfUI') then
         Flyout_GetActionButton = GetActionButton_PF
-        Flyout_UpdateBars = UpdateBars_PF
     end
 end
 

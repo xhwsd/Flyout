@@ -122,34 +122,30 @@ local function UpdateBarButton(slot)
    if button then
       local arrow = _G[button:GetName() .. 'FlyoutArrow']
       if arrow then
-         if arrow:IsVisible() then
-            arrow:Hide()
-         end
+         arrow:Hide()
       end
 
-      local macro = GetActionText(slot)
-      if macro then
-         local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-         local s = strfind(body, '/flyout')
-         if s and s == 1 then
-            Flyout_UpdateFlyoutArrow(button)
+      if HasAction(slot) then
+         local macro = GetActionText(slot)
+         if macro then
+            local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
+            local s = strfind(body, '/flyout')
+            if s and s == 1 then
+               Flyout_UpdateFlyoutArrow(button)
+            end
          end
       end
-   end
-end
-
-local function Init()
-   if not Flyout_Config then
-      Flyout_Config = {
-         ['button_size'] = 24,
-         ['border_color'] = { 0, 0, 0 }
-      }
    end
 end
 
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
-      Init()
+      if not Flyout_Config then
+         Flyout_Config = {
+            ['button_size'] = 24,
+            ['border_color'] = { 0, 0, 0 }
+         }
+      end
    elseif event == 'PLAYER_ENTERING_WORLD' then
       Flyout_UpdateBars()
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
@@ -174,24 +170,8 @@ function Flyout_GetActionButton(action)
 end
 
 function Flyout_UpdateBars()
-   for i = 1, sizeof(bars) do
-      for j = 1, 12 do
-         local button = _G[bars[i] .. "Button" .. j]
-         local arrow = _G[button:GetName() .. 'FlyoutArrow']
-         if arrow then arrow:Hide() end
-
-         local slot = ActionButton_GetPagedID(button)
-         if HasAction(slot) then
-            local macro = GetActionText(slot)
-            if macro then
-               local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-               local s = strfind(body, "/flyout")
-               if s and s == 1 then
-                  Flyout_UpdateFlyoutArrow(button)
-               end
-            end
-         end
-      end
+   for i = 1, 120 do
+      UpdateBarButton(i)
    end
 end
 
