@@ -12,6 +12,7 @@ local bars = {
 
 -- upvalues
 local ActionButton_GetPagedID = ActionButton_GetPagedID
+local ChatEdit_SendText = ChatEdit_SendText
 local GameTooltip_SetDefaultAnchor = GameTooltip_SetDefaultAnchor
 local GetActionText = GetActionText
 local GetNumSpellTabs = GetNumSpellTabs
@@ -63,6 +64,15 @@ local function GetSpellSlotByName(name)
             return index
          end
       end
+   end
+end
+
+local function ExecuteMacro(macro)
+   local _, _, body = GetMacroInfo(macro)
+   local commands = strsplit(body, '\n')
+   for i = 1, sizeof(commands) do
+      ChatFrameEditBox:SetText(commands[i])
+      ChatEdit_SendText(ChatFrameEditBox)
    end
 end
 
@@ -247,8 +257,18 @@ function UseAction(slot, checkCursor)
 
             body = strsub(body, e + 1)
             for i, n in (strsplit(body, ';')) do
-               local spell = GetSpellSlotByName(n)
-               if spell then
+               local action = nil
+               local type = nil -- if 0 = spell, 1 = macro
+
+               if GetSpellSlotByName(n) then
+                  action = GetSpellSlotByName(n)
+                  type = 0
+               elseif GetMacroIndexByName(n) then
+                  action = GetMacroIndexByName(n)
+                  type = 1
+               end
+
+               if action then
                   local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
                   b:Show()
                   b:ClearAllPoints()
@@ -268,7 +288,11 @@ function UseAction(slot, checkCursor)
 
                   b:SetScript('OnClick',
                      function()
-                        CastSpell(spell, 'spell')
+                        if type == 0 then
+                           CastSpell(action, 'spell')
+                        else
+                           ExecuteMacro(action)
+                        end
 
                         HideFlyout()
                      end
@@ -276,7 +300,11 @@ function UseAction(slot, checkCursor)
                   b:SetScript('OnEnter',
                      function()
                         GameTooltip_SetDefaultAnchor(GameTooltip, this)
-                        GameTooltip:SetSpell(spell, 'spell')
+                        if type == 0 then
+                           GameTooltip:SetSpell(action, 'spell')
+                        else
+                           GameTooltip:SetText(GetMacroInfo(action), 1, 1, 1)
+                        end
                         GameTooltip:Show()
                      end
                   )
@@ -293,8 +321,16 @@ function UseAction(slot, checkCursor)
                      end
                   )
 
+                  local texture = nil
+                  if type == 0 then
+                     texture = GetSpellTexture(action, 'spell')
+                  else
+                     local _, t = GetMacroInfo(action)
+                     texture = t
+                  end
+
                   b.texture = _G[b:GetName() .. 'NormalTexture']
-                  b.texture:SetTexture(GetSpellTexture(spell, 'spell'))
+                  b.texture:SetTexture(texture)
                   b.texture:SetPoint('TOPLEFT', b, 1, -1)
                   b.texture:SetPoint('BOTTOMRIGHT', b, -1, 1)
                   b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
