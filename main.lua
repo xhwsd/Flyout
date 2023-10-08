@@ -133,6 +133,17 @@ local function UpdateBarButton(slot)
             if s and s == 1 then
                Flyout_UpdateFlyoutArrow(button)
 
+               button:SetScript('OnLeave',
+                  function()
+                     this.updateTooltip = nil
+                     GameTooltip:Hide()
+
+                     local focus = GetMouseFocus()
+                        if focus and not strfind(focus:GetName(), 'Flyout') then
+                           HideFlyout()
+                        end
+                  end
+               )
                button:SetScript('OnEnter',
                   function()
                      ActionButton_SetTooltip()
