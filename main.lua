@@ -132,6 +132,16 @@ local function UpdateBarButton(slot)
             local s = strfind(body, '/flyout')
             if s and s == 1 then
                Flyout_UpdateFlyoutArrow(button)
+
+               button:SetScript('OnEnter',
+                  function()
+                     ActionButton_SetTooltip()
+
+                     if Flyout_Config['hover'] then
+                        UseAction(slot)
+                     end
+                  end
+               )
             end
          end
       end
@@ -143,7 +153,8 @@ local function HandleEvent()
       if not Flyout_Config then
          Flyout_Config = {
             ['button_size'] = 24,
-            ['border_color'] = { 0, 0, 0 }
+            ['border_color'] = { 0, 0, 0 },
+            ['hover'] = false
          }
       end
    elseif event == 'PLAYER_ENTERING_WORLD' then
