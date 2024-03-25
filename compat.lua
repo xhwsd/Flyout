@@ -8,13 +8,9 @@ local GetMacroInfo = GetMacroInfo
 local IsAddOnLoaded = IsAddOnLoaded
 
 local floor = math.floor
+local mod = math.mod
 
 local strfind = string.find
-
--- utils
-local function modulus(a, b)
-    return a - floor(a / b) * b
-end
 
 -- Bongos
 local function GetActionButton_Bongos(action)
@@ -48,8 +44,8 @@ local function GetActionButton_PF(action)
     end
 
     local i = 1
-    if modulus(action, 12) ~= 0 then
-        i = modulus(action, 12)
+    if mod(action, 12) ~= 0 then
+        i = mod(action, 12)
     else
         i = 12
     end
