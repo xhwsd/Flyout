@@ -5,7 +5,7 @@
 ## Version: GIT
 ## SavedVariablesPerCharacter: Flyout_Config
 
-FlyoutButton.xml
+Templates.xml
 
 main.lua
 options.lua
