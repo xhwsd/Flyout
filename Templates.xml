@@ -1,5 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
-    <CheckButton name="FlyoutButtonTemplate" virtual="true" inherits="ActionButtonTemplate" parent="UIParent" hidden="true">
+    <CheckButton name="FlyoutButtonTemplate" virtual="true" inherits="ActionButtonTemplate" parent="UIParent" hidden="true" frameStrata="FULLSCREEN">
         <HitRectInsets>
             <AbsInset left="-3" right="-3" top="-3" bottom="-3" />
         </HitRectInsets>
