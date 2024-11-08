@@ -110,7 +110,8 @@ local function UpdateBarButton(slot)
             if s and s == 1 and e == 7 then
                button.onEnter = button:GetScript('OnEnter')
 
-               local firstAction = strsub(body, e + 2, strfind(body, ';') - 1)
+               local delim = strfind(body, ';') or strlen(body)
+               local firstAction = strsub(body, e + 2, delim - 1)
                local slot = GetSpellSlotByName(firstAction)
                if slot then
                   button.flyout = { 0, slot }
