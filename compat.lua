@@ -1,16 +1,9 @@
 local _G = getfenv(0)
 
 -- upvalues
-local GetActionText = GetActionText
-local HasAction = HasAction
-local GetMacroIndexByName = GetMacroIndexByName
-local GetMacroInfo = GetMacroInfo
 local IsAddOnLoaded = IsAddOnLoaded
 
-local floor = math.floor
 local mod = math.mod
-
-local strfind = string.find
 
 -- Bongos
 local function GetActionButton_Bongos(action)
@@ -23,21 +16,21 @@ local function GetActionButton_PF(action)
 
     if action < 25 then
         bar = 'pfActionBarMain'
-    elseif  action < 37 then
+    elseif action < 37 then
         bar = 'pfActionBarRight'
-    elseif  action < 49 then
+    elseif action < 49 then
         bar = 'pfActionBarVertical'
-    elseif  action < 61 then
+    elseif action < 61 then
         bar = 'pfActionBarLeft'
-    elseif  action < 73 then
+    elseif action < 73 then
         bar = 'pfActionBarTop'
-    elseif  action < 85 then
+    elseif action < 85 then
         bar = 'pfActionBarStanceBar1'
-    elseif  action < 97 then
+    elseif action < 97 then
         bar = 'pfActionBarStanceBar2'
-    elseif  action < 109 then
+    elseif action < 109 then
         bar = 'pfActionBarStanceBar3'
-    elseif  action < 121 then
+    elseif action < 121 then
         bar = 'pfActionBarStanceBar4'
     else
         bar = 'pfActionBarMain'
