@@ -111,13 +111,15 @@ local function UpdateBarButton(slot)
                button.onEnter = button:GetScript('OnEnter')
                button:SetCheckedTexture(nil)
 
-               local delim = strfind(body, ';') or strlen(body)
-               local firstAction = strsub(body, e + 2, delim - 1)
-               local slot = GetSpellSlotByName(firstAction)
-               if slot then
-                  button.flyout = { 0, slot }
-               else
-                  button.flyout = { 1, GetMacroIndexByName(firstAction) }
+               body = strsub(body, e + 1)
+               for _, n in (strsplit(body, ';')) do
+                  local slot = GetSpellSlotByName(n)
+                  if slot then
+                     button.flyout = { 0, slot }
+                  else
+                     button.flyout = { 1, GetMacroIndexByName(n) }
+                  end
+                  break
                end
 
                Flyout_UpdateFlyoutArrow(button)
@@ -135,7 +137,7 @@ local function UpdateBarButton(slot)
                button:SetScript('OnEnter', function()
                   ActionButton_SetTooltip()
 
-                  Flyout_Show(this, strsub(body, e + 1))
+                  Flyout_Show(this, body)
                end)
             end
          end
