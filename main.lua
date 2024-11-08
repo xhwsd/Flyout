@@ -1,6 +1,5 @@
 local _G = getfenv(0)
 
-local active = nil
 local bars = {
    'Action',
    'BonusAction',
@@ -13,7 +12,6 @@ local bars = {
 -- upvalues
 local ActionButton_GetPagedID = ActionButton_GetPagedID
 local ChatEdit_SendText = ChatEdit_SendText
-local GameTooltip_SetDefaultAnchor = GameTooltip_SetDefaultAnchor
 local GetActionText = GetActionText
 local GetNumSpellTabs = GetNumSpellTabs
 local GetSpellName = GetSpellName
@@ -41,11 +39,10 @@ end
 
 local function strsplit(str, delimiter)
    local t = {}
-   strgsub(str, '([^' .. delimiter .. ']+)',
-      function(value)
-         insert(t, strtrim(value))
-      end
-   )
+   strgsub(str, '([^' .. delimiter .. ']+)', function(value)
+      insert(t, strtrim(value))
+   end)
+
    return t
 end
 
@@ -67,34 +64,7 @@ local function GetSpellSlotByName(name)
    end
 end
 
-local function ExecuteMacro(macro)
-   local _, _, body = GetMacroInfo(macro)
-   local commands = strsplit(body, '\n')
-   for i = 1, sizeof(commands) do
-      ChatFrameEditBox:SetText(commands[i])
-      ChatEdit_SendText(ChatFrameEditBox)
-   end
-end
-
-local function HideFlyout()
-   local i = 0
-   while true do
-      i = i + 1
-
-      local button = _G['FlyoutButton' .. i]
-      if button then
-         button:SetChecked(false)
-         button:Hide()
-
-         _G[button:GetName() .. 'NormalTexture']:SetTexture(nil)
-      else
-         break
-      end
-   end
-
-   active = nil
-end
-
+-- local functions
 local function GetFlyoutDirection(button)
    local horizontal = false
    local bar = button:GetParent()
@@ -125,34 +95,46 @@ local function UpdateBarButton(slot)
          arrow:Hide()
       end
 
+      if button.onEnter then
+         button:SetScript('OnEnter', button.onEnter)
+
+         button.flyout = nil
+         button.onEnter = nil
+      end
+
       if HasAction(slot) then
          local macro = GetActionText(slot)
          if macro then
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-            local s = strfind(body, '/flyout')
-            if s and s == 1 then
+            local s, e = strfind(body, '/flyout')
+            if s and s == 1 and e == 7 then
+               button.onEnter = button:GetScript('OnEnter')
+
+               local firstAction = strsub(body, e + 2, strfind(body, ';') - 1)
+               local slot = GetSpellSlotByName(firstAction)
+               if slot then
+                  button.flyout = { 0, slot }
+               else
+                  button.flyout = { 1, GetMacroIndexByName(firstAction) }
+               end
+
                Flyout_UpdateFlyoutArrow(button)
 
-               button:SetScript('OnLeave',
-                  function()
-                     this.updateTooltip = nil
-                     GameTooltip:Hide()
+               button:SetScript('OnLeave', function()
+                  this.updateTooltip = nil
+                  GameTooltip:Hide()
 
-                     local focus = GetMouseFocus()
-                        if focus and not strfind(focus:GetName(), 'Flyout') then
-                           HideFlyout()
-                        end
+                  local focus = GetMouseFocus()
+                  if focus and not strfind(focus:GetName(), 'Flyout') then
+                     Flyout_Hide()
                   end
-               )
-               button:SetScript('OnEnter',
-                  function()
-                     ActionButton_SetTooltip()
+               end)
 
-                     if Flyout_Config['hover'] then
-                        UseAction(slot)
-                     end
-                  end
-               )
+               button:SetScript('OnEnter', function()
+                  ActionButton_SetTooltip()
+
+                  Flyout_Show(this, strsub(body, e + 1))
+               end)
             end
          end
       end
@@ -161,28 +143,102 @@ end
 
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
-      if not Flyout_Config then
-         Flyout_Config = {
-            ['button_size'] = 24,
-            ['border_color'] = { 0, 0, 0 },
-            ['hover'] = false
+      if not Flyout_Config or Flyout_Config['hover'] then
+         Flyout_Config =
+         {
+            ['BUTTON_SIZE'] = 24,
+            ['BORDER_COLOR'] = { 0, 0, 0 },
          }
       end
-   elseif event == 'PLAYER_ENTERING_WORLD' then
-      Flyout_UpdateBars()
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
-      HideFlyout()
+      Flyout_Hide()
       UpdateBarButton(arg1)
    else
-      HideFlyout()
+      Flyout_Hide()
       Flyout_UpdateBars()
+   end
+end
+
+local handler = CreateFrame('Frame')
+handler:RegisterEvent('VARIABLES_LOADED')
+handler:RegisterEvent('PLAYER_ENTERING_WORLD')
+handler:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
+handler:SetScript('OnEvent', HandleEvent)
+
+-- globals
+function Flyout_ExecuteMacro(macro)
+   local _, _, body = GetMacroInfo(macro)
+   local commands = strsplit(body, '\n')
+   for i = 1, sizeof(commands) do
+      ChatFrameEditBox:SetText(commands[i])
+      ChatEdit_SendText(ChatFrameEditBox)
+   end
+end
+
+function Flyout_Hide()
+   local i = 1
+   local button = _G['FlyoutButton' .. i]
+   while button do
+      i = i + 1
+
+      button:Hide()
+      button:SetChecked(false)
+      button:GetNormalTexture():SetTexture(nil)
+
+      button = _G['FlyoutButton' .. i]
+   end
+end
+
+function Flyout_Show(button, spells)
+   local direction = GetFlyoutDirection(button)
+   local size = Flyout_Config['BUTTON_SIZE']
+   local offset = size
+
+   for i, n in (strsplit(spells, ';')) do
+      local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
+      b:ClearAllPoints()
+      b:SetWidth(size)
+      b:SetHeight(size)
+      b:SetBackdropColor(Flyout_Config['BORDER_COLOR'][1], Flyout_Config['BORDER_COLOR'][2], Flyout_Config['BORDER_COLOR'][3])
+      b:Show()
+
+      local texture = nil
+      if GetSpellSlotByName(n) then
+         local spellName = GetSpellSlotByName(n)
+
+         b.action = spellName
+         b.actionType = 0
+
+         texture = GetSpellTexture(spellName, 'spell')
+      elseif GetMacroIndexByName(n) then
+         local macroIndex = GetMacroIndexByName(n)
+         b.action = macroIndex
+         b.actionType = 1
+
+         _, texture = GetMacroInfo(macroIndex)
+      end
+
+      b:GetNormalTexture():SetTexture(texture)
+
+      if direction == 'BOTTOM' then
+         b:SetPoint('BOTTOM', button, 0, -offset)
+      elseif direction == 'LEFT' then
+         b:SetPoint('LEFT', button, -offset, 0)
+      elseif direction == 'RIGHT' then
+         b:SetPoint('RIGHT', button, offset, 0)
+      else
+         b:SetPoint('TOP', button, 0, offset)
+      end
+
+      offset = offset + size
    end
 end
 
 function Flyout_GetActionButton(action)
    for i = 1, sizeof(bars) do
       for j = 1, 12 do
-         local button = _G[bars[i] .. "Button" .. j]
+         local button = _G[bars[i] .. 'Button' .. j]
          local slot = ActionButton_GetPagedID(button)
          if slot == action and button:IsVisible() then
             return button
@@ -222,7 +278,6 @@ function Flyout_UpdateFlyoutArrow(button)
       button.arrow:SetHeight(18)
       button.arrow:SetTexCoord(0.315, 0, 0.375, 1)
       button.arrow:SetPoint('RIGHT', button, 5, 0)
-
    else
       button.arrow:SetWidth(18)
       button.arrow:SetHeight(10)
@@ -231,124 +286,18 @@ function Flyout_UpdateFlyoutArrow(button)
    end
 end
 
-local _UseAction = UseAction
+local Flyout_UseAction = UseAction
 function UseAction(slot, checkCursor)
-   _UseAction(slot, checkCursor)
+   Flyout_UseAction(slot, checkCursor)
 
-   if active then
-      if active == slot then
-         HideFlyout()
-         return
-      end
-
-      HideFlyout()
-   end
-
-   active = slot
-
-   local macro = GetActionText(slot)
-   if macro then
-      local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
-      local s, e = strfind(body, "/flyout")
-      if s and s == 1 then
-         local button = Flyout_GetActionButton(slot)
-         if button then
-            local direction = GetFlyoutDirection(button)
-            local size = Flyout_Config['button_size']
-            local offset = size
-
-            body = strsub(body, e + 1)
-            for i, n in (strsplit(body, ';')) do
-               local action = nil
-               local type = nil -- if 0 = spell, 1 = macro
-
-               if GetSpellSlotByName(n) then
-                  action = GetSpellSlotByName(n)
-                  type = 0
-               elseif GetMacroIndexByName(n) then
-                  action = GetMacroIndexByName(n)
-                  type = 1
-               end
-
-               if action then
-                  local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
-                  b:Show()
-                  b:ClearAllPoints()
-                  b:SetWidth(Flyout_Config['button_size'])
-                  b:SetHeight(Flyout_Config['button_size'])
-                  b:SetBackdropColor(Flyout_Config['border_color'][1], Flyout_Config['border_color'][2], Flyout_Config['border_color'][3])
-
-                  if direction == 'BOTTOM' then
-                     b:SetPoint('BOTTOM', button, 0, -offset)
-                  elseif direction == 'LEFT' then
-                     b:SetPoint('LEFT', button, -offset, 0)
-                  elseif direction == 'RIGHT' then
-                     b:SetPoint('RIGHT', button, offset, 0)
-                  else
-                     b:SetPoint('TOP', button, 0, offset)
-                  end
-
-                  b:SetScript('OnClick',
-                     function()
-                        if type == 0 then
-                           CastSpell(action, 'spell')
-                        else
-                           ExecuteMacro(action)
-                        end
-
-                        HideFlyout()
-                     end
-                  )
-                  b:SetScript('OnEnter',
-                     function()
-                        GameTooltip_SetDefaultAnchor(GameTooltip, this)
-                        if type == 0 then
-                           GameTooltip:SetSpell(action, 'spell')
-                        else
-                           GameTooltip:SetText(GetMacroInfo(action), 1, 1, 1)
-                        end
-                        GameTooltip:Show()
-                     end
-                  )
-                  b:SetScript('OnLeave',
-                     function()
-                        GameTooltip:Hide()
-
-                        local focus = GetMouseFocus()
-                        if focus then
-                           if not strfind(focus:GetName(), 'Flyout') then
-                              HideFlyout()
-                           end
-                        end
-                     end
-                  )
-
-                  local texture = nil
-                  if type == 0 then
-                     texture = GetSpellTexture(action, 'spell')
-                  else
-                     local _, t = GetMacroInfo(action)
-                     texture = t
-                  end
-
-                  b.texture = _G[b:GetName() .. 'NormalTexture']
-                  b.texture:SetTexture(texture)
-                  b.texture:SetPoint('TOPLEFT', b, 1, -1)
-                  b.texture:SetPoint('BOTTOMRIGHT', b, -1, 1)
-                  b.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-                  offset = offset + size
-               end
-            end
-         end
+   local button = Flyout_GetActionButton(slot)
+   if button and button.flyout then
+      if button.flyout[1] == 0 then
+         CastSpell(button.flyout[2], 'spell')
+      else
+         Flyout_ExecuteMacro(button.flyout[2])
       end
    end
+
+   Flyout_Hide()
 end
-
-local handler = CreateFrame('Frame')
-handler:RegisterEvent('VARIABLES_LOADED')
-handler:RegisterEvent('PLAYER_ENTERING_WORLD')
-handler:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
-handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
-handler:RegisterEvent('UPDATE_MACROS')
-handler:SetScript('OnEvent', HandleEvent)

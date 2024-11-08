@@ -7,5 +7,52 @@
             <BackgroundInsets left="-1" right="-1" top="-1" bottom="-1" />
             <Color r="0" g="0" b="0" />
         </Backdrop>
+        <NormalTexture name="$parentNormalTexture">
+            <TexCoords left="0.08" right="0.92" top="0.08" bottom="0.92" />
+            <Anchors>
+                <Anchor point="TOPLEFT">
+                    <Offset>
+                        <AbsDimension x="1" y="-1" />
+                    </Offset>
+                </Anchor>
+                <Anchor point="BOTTOMRIGHT">
+                    <Offset>
+                        <AbsDimension x="-1" y="1" />
+                    </Offset>
+                </Anchor>
+            </Anchors>
+        </NormalTexture>
+        <Scripts>
+            <OnLoad>
+                this.action = ""
+                this.actionType = -1
+            </OnLoad>
+            <OnClick>
+                if this.actionType == 0 then
+                    CastSpell(this.action, 'spell')
+                else
+                    Flyout_ExecuteMacro(this.action)
+                end
+
+                Flyout_Hide()
+            </OnClick>
+            <OnEnter>
+                GameTooltip_SetDefaultAnchor(GameTooltip, this)
+                if this.actionType == 0 then
+                    GameTooltip:SetSpell(this.action, 'spell')
+                else
+                    GameTooltip:SetText(GetMacroInfo(this.action), 1, 1, 1)
+                end
+                GameTooltip:Show()
+            </OnEnter>
+            <OnLeave>
+                GameTooltip:Hide()
+
+                local focus = GetMouseFocus()
+                if focus and not strfind(focus:GetName(), 'Flyout') then
+                    Flyout_Hide()
+                end
+            </OnLeave>
+        </Scripts>
     </CheckButton>
 </Ui>
