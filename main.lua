@@ -262,31 +262,39 @@ function Flyout_UpdateFlyoutArrow(button)
 
    local direction = GetFlyoutDirection(button)
 
-   button.arrow = _G[button:GetName() .. 'FlyoutArrow'] or button:CreateTexture(button:GetName() .. 'FlyoutArrow', 'OVERLAY')
-   button.arrow:ClearAllPoints()
-   button.arrow:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
-   button.arrow:Show()
+   local arrow = _G[button:GetName() .. 'FlyoutArrow']
+   if not arrow then
+      arrow = CreateFrame('Frame', button:GetName() .. 'FlyoutArrow', button)
+      arrow:SetPoint('TOPLEFT', button)
+      arrow:SetPoint('BOTTOMRIGHT', button)
+      arrow:SetFrameStrata('FULLSCREEN')
+      arrow.texture = arrow:CreateTexture(arrow:GetName() .. 'Texture', 'ARTWORK')
+      arrow.texture:SetTexture('Interface\\AddOns\\Flyout\\assets\\FlyoutButton')
+   end
+
+   arrow:Show()
+   arrow.texture:ClearAllPoints()
 
    if direction == 'BOTTOM' then
-      button.arrow:SetWidth(18)
-      button.arrow:SetHeight(10)
-      button.arrow:SetTexCoord(0, 0.565, 0.315, 0)
-      button.arrow:SetPoint('BOTTOM', button, 0, -5)
+      arrow.texture:SetWidth(20)
+      arrow.texture:SetHeight(12)
+      arrow.texture:SetTexCoord(0, 0.565, 0.315, 0)
+      arrow.texture:SetPoint('BOTTOM', arrow, 0, -6)
    elseif direction == 'LEFT' then
-      button.arrow:SetWidth(10)
-      button.arrow:SetHeight(18)
-      button.arrow:SetTexCoord(0, 0.315, 0.375, 1)
-      button.arrow:SetPoint('LEFT', button, -5, 0)
+      arrow.texture:SetWidth(12)
+      arrow.texture:SetHeight(20)
+      arrow.texture:SetTexCoord(0, 0.315, 0.375, 1)
+      arrow.texture:SetPoint('LEFT', arrow, -6, 0)
    elseif direction == 'RIGHT' then
-      button.arrow:SetWidth(10)
-      button.arrow:SetHeight(18)
-      button.arrow:SetTexCoord(0.315, 0, 0.375, 1)
-      button.arrow:SetPoint('RIGHT', button, 5, 0)
+      arrow.texture:SetWidth(12)
+      arrow.texture:SetHeight(20)
+      arrow.texture:SetTexCoord(0.315, 0, 0.375, 1)
+      arrow.texture:SetPoint('RIGHT', arrow, 6, 0)
    else
-      button.arrow:SetWidth(18)
-      button.arrow:SetHeight(10)
-      button.arrow:SetTexCoord(0, 0.565, 0, 0.315)
-      button.arrow:SetPoint('TOP', button, 0, 5)
+      arrow.texture:SetWidth(20)
+      arrow.texture:SetHeight(12)
+      arrow.texture:SetTexCoord(0, 0.565, 0, 0.315)
+      arrow.texture:SetPoint('TOP', arrow, 0, 6)
    end
 end
 
