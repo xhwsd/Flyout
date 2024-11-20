@@ -1,5 +1,6 @@
 local _G = getfenv(0)
 
+local revision = 1.0
 local bars = {
    'Action',
    'BonusAction',
@@ -147,9 +148,9 @@ end
 
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
-      if not Flyout_Config or Flyout_Config['hover'] then
-         Flyout_Config =
-         {
+      if not Flyout_Config or (Flyout_Config['REVISION'] == nil or Flyout_Config['REVISION'] ~= revision) then
+         Flyout_Config = {
+            ['REVISION'] = revision,
             ['BUTTON_SIZE'] = 24,
             ['BORDER_COLOR'] = { 0, 0, 0 },
          }
