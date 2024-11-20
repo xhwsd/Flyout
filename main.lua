@@ -110,7 +110,6 @@ local function UpdateBarButton(slot)
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
                button.onEnter = button:GetScript('OnEnter')
-               button:SetCheckedTexture(nil)
 
                body = strsub(body, e + 1)
                for _, n in (strsplit(body, ';')) do
