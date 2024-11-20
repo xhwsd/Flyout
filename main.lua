@@ -113,9 +113,9 @@ local function UpdateBarButton(slot)
 
                body = strsub(body, e + 1)
                for _, n in (strsplit(body, ';')) do
-                  local slot = GetSpellSlotByName(n)
-                  if slot then
-                     button.flyout = { 0, slot }
+                  local spellSlot = GetSpellSlotByName(n)
+                  if spellSlot then
+                     button.flyout = { 0, spellSlot }
                   else
                      button.flyout = { 1, GetMacroIndexByName(n) }
                   end
