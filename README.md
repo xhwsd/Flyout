@@ -5,7 +5,7 @@ Flyout is a World of Warcraft Vanilla (1.12) addon that mimicks the flyout featu
 ## How to
 
 1. Open your macros and create a new macro
-2. In the macro body, start by typing `/flyout` and then the names of spells/macros separated by a semicolon **(Do not insert a semicolon after the last spell/icon)**
+2. In the macro body, start by typing `/flyout` and then the names of spells/macros separated by a semicolon
    - To use a specific rank of a spell, use `Frostbolt(Rank 1)`. To use the highest rank available, use `Frostbolt`
 
    ![Macro body example](screenshots/macro.png)

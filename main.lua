@@ -201,13 +201,8 @@ function Flyout_Show(button, spells)
 
    for i, n in (strsplit(spells, ';')) do
       local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
-      b:ClearAllPoints()
-      b:SetWidth(size)
-      b:SetHeight(size)
-      b:SetBackdropColor(Flyout_Config['BORDER_COLOR'][1], Flyout_Config['BORDER_COLOR'][2], Flyout_Config['BORDER_COLOR'][3])
-      b:Show()
-
       local texture = nil
+      
       if GetSpellSlotByName(n) then
          local spellName = GetSpellSlotByName(n)
 
@@ -223,19 +218,27 @@ function Flyout_Show(button, spells)
          _, texture = GetMacroInfo(macroIndex)
       end
 
-      b:GetNormalTexture():SetTexture(texture)
+      if texture then
+         b:ClearAllPoints()
+         b:SetWidth(size)
+         b:SetHeight(size)
+         b:SetBackdropColor(Flyout_Config['BORDER_COLOR'][1], Flyout_Config['BORDER_COLOR'][2], Flyout_Config['BORDER_COLOR'][3])
+         b:Show()
 
-      if direction == 'BOTTOM' then
-         b:SetPoint('BOTTOM', button, 0, -offset)
-      elseif direction == 'LEFT' then
-         b:SetPoint('LEFT', button, -offset, 0)
-      elseif direction == 'RIGHT' then
-         b:SetPoint('RIGHT', button, offset, 0)
-      else
-         b:SetPoint('TOP', button, 0, offset)
+         b:GetNormalTexture():SetTexture(texture)
+
+         if direction == 'BOTTOM' then
+            b:SetPoint('BOTTOM', button, 0, -offset)
+         elseif direction == 'LEFT' then
+            b:SetPoint('LEFT', button, -offset, 0)
+         elseif direction == 'RIGHT' then
+            b:SetPoint('RIGHT', button, offset, 0)
+         else
+            b:SetPoint('TOP', button, 0, offset)
+         end
+
+         offset = offset + size
       end
-
-      offset = offset + size
    end
 end
 
