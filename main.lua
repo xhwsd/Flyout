@@ -105,11 +105,18 @@ local function UpdateBarButton(slot)
 
       if HasAction(slot) then
          local macro = GetActionText(slot)
+         button.sticky = false
          if macro then
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
                button.onEnter = button:GetScript('OnEnter')
+
+               -- Identify sticky menus.
+               if strfind(body, "%[sticky%]") then
+                  body = strgsub(body, "%[sticky%]", "")
+                  button.sticky = true
+              end
 
                body = strsub(body, e + 1)
                for _, n in (strsplit(body, ';')) do
@@ -155,7 +162,7 @@ local function HandleEvent()
          }
       end
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
-      Flyout_Hide()
+      Flyout_Hide(true)  -- Keep sticky menus open.
       UpdateBarButton(arg1)
    else
       Flyout_Hide()
@@ -180,15 +187,18 @@ function Flyout_ExecuteMacro(macro)
    end
 end
 
-function Flyout_Hide()
+function Flyout_Hide(keepOpenIfSticky)
    local i = 1
    local button = _G['FlyoutButton' .. i]
    while button do
       i = i + 1
 
-      button:Hide()
+      if not keepOpenIfSticky or (keepOpenIfSticky and not button.sticky) then
+         button:Hide()
+         button:GetNormalTexture():SetTexture(nil)
+         button:GetPushedTexture():SetTexture(nil)
+      end
       button:SetChecked(false)
-      button:GetNormalTexture():SetTexture(nil)
 
       button = _G['FlyoutButton' .. i]
    end
@@ -201,6 +211,7 @@ function Flyout_Show(button, spells)
 
    for i, n in (strsplit(spells, ';')) do
       local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
+      b.sticky = button.sticky
       local texture = nil
       
       if GetSpellSlotByName(n) then
@@ -226,6 +237,7 @@ function Flyout_Show(button, spells)
          b:Show()
 
          b:GetNormalTexture():SetTexture(texture)
+         b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
 
          if direction == 'BOTTOM' then
             b:SetPoint('BOTTOM', button, 0, -offset)

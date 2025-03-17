@@ -33,8 +33,7 @@
                 else
                     Flyout_ExecuteMacro(this.action)
                 end
-
-                Flyout_Hide()
+                Flyout_Hide(true)
             </OnClick>
             <OnEnter>
                 GameTooltip_SetDefaultAnchor(GameTooltip, this)
