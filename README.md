@@ -1,6 +1,6 @@
 # Flyout
 
-Flyout is a World of Warcraft Vanilla (1.12) addon that mimicks the flyout feature implemented in later expansions.
+Flyout is a World of Warcraft Vanilla (1.12) addon that mimics the flyout feature implemented in later expansions.
 
 ## How to
 
