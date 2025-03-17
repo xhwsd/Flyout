@@ -119,15 +119,6 @@ local function UpdateBarButton(slot)
               end
 
                body = strsub(body, e + 1)
-               for _, n in (strsplit(body, ';')) do
-                  local spellSlot = GetSpellSlotByName(n)
-                  if spellSlot then
-                     button.flyout = { 0, spellSlot }
-                  else
-                     button.flyout = { 1, GetMacroIndexByName(n) }
-                  end
-                  break
-               end
 
                Flyout_UpdateFlyoutArrow(button)
 
