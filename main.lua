@@ -300,19 +300,3 @@ function Flyout_UpdateFlyoutArrow(button)
       arrow.texture:SetPoint('TOP', arrow, 0, 6)
    end
 end
-
-local Flyout_UseAction = UseAction
-function UseAction(slot, checkCursor)
-   Flyout_UseAction(slot, checkCursor)
-
-   local button = Flyout_GetActionButton(slot)
-   if button and button.flyout then
-      if button.flyout[1] == 0 then
-         CastSpell(button.flyout[2], 'spell')
-      else
-         Flyout_ExecuteMacro(button.flyout[2])
-      end
-   end
-
-   Flyout_Hide()
-end
