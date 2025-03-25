@@ -38,13 +38,31 @@ local function strtrim(str)
    return strsub(str, e + 1, s - 1)
 end
 
+local function tblclear(tbl)
+	if type(tbl) ~= "table" then
+		return
+	end
+
+	-- Clear array-type tables first so table.insert will start over at 1.
+	for i = sizeof(tbl), 1, -1 do
+		table.remove(tbl, i)
+	end
+
+	-- Remove any remaining associative table elements.
+	-- Credit: https://stackoverflow.com/a/27287723
+	for k in next, tbl do
+		rawset(tbl, k, nil)
+	end
+end
+
+local strSplitReturn = {}  -- Reusable table for strsplit().
 local function strsplit(str, delimiter)
-   local t = {}
+   tblclear(strSplitReturn)
    strgsub(str, '([^' .. delimiter .. ']+)', function(value)
-      insert(t, strtrim(value))
+      insert(strSplitReturn, strtrim(value))
    end)
 
-   return t
+   return strSplitReturn
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
