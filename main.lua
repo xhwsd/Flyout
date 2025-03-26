@@ -10,7 +10,13 @@ local bars = {
    'MultiBarLeft'
 }
 
-local ARROW_SCALE = 5/9  -- Relative size compared to action button.
+FLYOUT_DEFAULT_CONFIG = {
+   ['REVISION'] = revision,
+   ['BUTTON_SIZE'] = 24,
+   ['BORDER_COLOR'] = { 0, 0, 0 },
+   ['ARROW_SCALE'] = 5/9,
+}
+
 local ARROW_RATIO = 0.6  -- Height to width.
 
 -- upvalues
@@ -177,11 +183,13 @@ end
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
       if not Flyout_Config or (Flyout_Config['REVISION'] == nil or Flyout_Config['REVISION'] ~= revision) then
-         Flyout_Config = {
-            ['REVISION'] = revision,
-            ['BUTTON_SIZE'] = 24,
-            ['BORDER_COLOR'] = { 0, 0, 0 },
-         }
+         Flyout_Config = {}
+      end
+      -- Initialize defaults if not present.
+      for key, value in pairs(FLYOUT_DEFAULT_CONFIG) do
+         if not Flyout_Config[key] then
+            Flyout_Config[key] = value
+         end
       end
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
       Flyout_Hide(true)  -- Keep sticky menus open.
@@ -368,7 +376,7 @@ function Flyout_UpdateFlyoutArrow(button)
    arrow:Show()
    arrow.texture:ClearAllPoints()
 
-   local arrowWideDimension = (button:GetWidth() or 36) * ARROW_SCALE
+   local arrowWideDimension = (button:GetWidth() or 36) * Flyout_Config['ARROW_SCALE']
    local arrowShortDimension = arrowWideDimension * ARROW_RATIO
 
    if direction == 'BOTTOM' then
