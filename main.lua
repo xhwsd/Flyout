@@ -10,6 +10,9 @@ local bars = {
    'MultiBarLeft'
 }
 
+local ARROW_SCALE = 5/9  -- Relative size compared to action button.
+local ARROW_RATIO = 0.6  -- Height to width.
+
 -- upvalues
 local ActionButton_GetPagedID = ActionButton_GetPagedID
 local ChatEdit_SendText = ChatEdit_SendText
@@ -365,24 +368,27 @@ function Flyout_UpdateFlyoutArrow(button)
    arrow:Show()
    arrow.texture:ClearAllPoints()
 
+   local arrowWideDimension = (button:GetWidth() or 36) * ARROW_SCALE
+   local arrowShortDimension = arrowWideDimension * ARROW_RATIO
+
    if direction == 'BOTTOM' then
-      arrow.texture:SetWidth(20)
-      arrow.texture:SetHeight(12)
+      arrow.texture:SetWidth(arrowWideDimension)
+      arrow.texture:SetHeight(arrowShortDimension)
       arrow.texture:SetTexCoord(0, 0.565, 0.315, 0)
       arrow.texture:SetPoint('BOTTOM', arrow, 0, -6)
    elseif direction == 'LEFT' then
-      arrow.texture:SetWidth(12)
-      arrow.texture:SetHeight(20)
+      arrow.texture:SetWidth(arrowShortDimension)
+      arrow.texture:SetHeight(arrowWideDimension)
       arrow.texture:SetTexCoord(0, 0.315, 0.375, 1)
       arrow.texture:SetPoint('LEFT', arrow, -6, 0)
    elseif direction == 'RIGHT' then
-      arrow.texture:SetWidth(12)
-      arrow.texture:SetHeight(20)
+      arrow.texture:SetWidth(arrowShortDimension)
+      arrow.texture:SetHeight(arrowWideDimension)
       arrow.texture:SetTexCoord(0.315, 0, 0.375, 1)
       arrow.texture:SetPoint('RIGHT', arrow, 6, 0)
    else
-      arrow.texture:SetWidth(20)
-      arrow.texture:SetHeight(12)
+      arrow.texture:SetWidth(arrowWideDimension)
+      arrow.texture:SetHeight(arrowShortDimension)
       arrow.texture:SetTexCoord(0, 0.565, 0, 0.315)
       arrow.texture:SetPoint('TOP', arrow, 0, 6)
    end
