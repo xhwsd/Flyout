@@ -12,7 +12,7 @@ local bars = {
 
 FLYOUT_DEFAULT_CONFIG = {
    ['REVISION'] = revision,
-   ['BUTTON_SIZE'] = 24,
+   ['BUTTON_SIZE'] = 28,
    ['BORDER_COLOR'] = { 0, 0, 0 },
    ['ARROW_SCALE'] = 5/9,
 }
