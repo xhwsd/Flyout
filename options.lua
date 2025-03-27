@@ -32,9 +32,9 @@ SlashCmdList['FLYOUT'] = function(msg)
    end
 
    if not args[1] then
-      DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number|reset] - set flyout button size")
+      DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number||reset] - set flyout button size")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout color [reset] - adjust the color of the flyout border")
-      DEFAULT_CHAT_FRAME:AddMessage("/flyout arrow [number|reset] - adjust the relative size of the flyout arrow")
+      DEFAULT_CHAT_FRAME:AddMessage("/flyout arrow [number||reset] - adjust the relative size of the flyout arrow")
       DEFAULT_CHAT_FRAME:AddMessage(" ")
    elseif args[1] == 'size' then
       if args[2] then
