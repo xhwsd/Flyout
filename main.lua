@@ -10,6 +10,15 @@ local bars = {
    'MultiBarLeft'
 }
 
+FLYOUT_DEFAULT_CONFIG = {
+   ['REVISION'] = revision,
+   ['BUTTON_SIZE'] = 28,
+   ['BORDER_COLOR'] = { 0, 0, 0 },
+   ['ARROW_SCALE'] = 5/9,
+}
+
+local ARROW_RATIO = 0.6  -- Height to width.
+
 -- upvalues
 local ActionButton_GetPagedID = ActionButton_GetPagedID
 local ChatEdit_SendText = ChatEdit_SendText
@@ -38,13 +47,31 @@ local function strtrim(str)
    return strsub(str, e + 1, s - 1)
 end
 
+local function tblclear(tbl)
+	if type(tbl) ~= "table" then
+		return
+	end
+
+	-- Clear array-type tables first so table.insert will start over at 1.
+	for i = sizeof(tbl), 1, -1 do
+		table.remove(tbl, i)
+	end
+
+	-- Remove any remaining associative table elements.
+	-- Credit: https://stackoverflow.com/a/27287723
+	for k in next, tbl do
+		rawset(tbl, k, nil)
+	end
+end
+
+local strSplitReturn = {}  -- Reusable table for strsplit().
 local function strsplit(str, delimiter)
-   local t = {}
+   tblclear(strSplitReturn)
    strgsub(str, '([^' .. delimiter .. ']+)', function(value)
-      insert(t, strtrim(value))
+      insert(strSplitReturn, strtrim(value))
    end)
 
-   return t
+   return strSplitReturn
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
@@ -88,59 +115,67 @@ local function GetFlyoutDirection(button)
    return direction
 end
 
+
+local function FlyoutBarButton_OnLeave()
+   this.updateTooltip = nil
+   GameTooltip:Hide()
+
+   local focus = GetMouseFocus()
+   if focus and not strfind(focus:GetName(), 'Flyout') then
+      Flyout_Hide()
+   end
+end
+
+
+local function FlyoutBarButton_OnEnter()
+   ActionButton_SetTooltip()
+   Flyout_Show(this)
+ end
+
+
 local function UpdateBarButton(slot)
    local button = Flyout_GetActionButton(slot)
    if button then
+
       local arrow = _G[button:GetName() .. 'FlyoutArrow']
       if arrow then
          arrow:Hide()
       end
 
-      if button.onEnter then
-         button:SetScript('OnEnter', button.onEnter)
-
-         button.flyout = nil
-         button.onEnter = nil
-      end
-
       if HasAction(slot) then
          local macro = GetActionText(slot)
+         button.sticky = false
          if macro then
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
-               button.onEnter = button:GetScript('OnEnter')
+               if not button.oldOnEnter then
+                  button.oldOnEnter = button:GetScript('OnEnter')
+                  button.oldOnLeave = button:GetScript('OnLeave')
+               end
+
+               -- Identify sticky menus.
+               if strfind(body, "%[sticky%]") then
+                  body = strgsub(body, "%[sticky%]", "")
+                  button.sticky = true
+              end
 
                body = strsub(body, e + 1)
-               for _, n in (strsplit(body, ';')) do
-                  local spellSlot = GetSpellSlotByName(n)
-                  if spellSlot then
-                     button.flyout = { 0, spellSlot }
-                  else
-                     button.flyout = { 1, GetMacroIndexByName(n) }
-                  end
-                  break
-               end
+
+               button.flyoutActions = body
 
                Flyout_UpdateFlyoutArrow(button)
 
-               button:SetScript('OnLeave', function()
-                  this.updateTooltip = nil
-                  GameTooltip:Hide()
-
-                  local focus = GetMouseFocus()
-                  if focus and not strfind(focus:GetName(), 'Flyout') then
-                     Flyout_Hide()
-                  end
-               end)
-
-               button:SetScript('OnEnter', function()
-                  ActionButton_SetTooltip()
-
-                  Flyout_Show(this, body)
-               end)
+               button:SetScript('OnLeave', FlyoutBarButton_OnLeave)
+               button:SetScript('OnEnter', FlyoutBarButton_OnEnter)
             end
          end
+
+      elseif button.oldOnEnter then
+         button:SetScript('OnEnter', button.oldOnEnter)
+         button:SetScript('OnLeave', button.oldOnLeave)
+         button.oldOnEnter = nil
+         button.oldOnLeave = nil
       end
    end
 end
@@ -148,14 +183,16 @@ end
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
       if not Flyout_Config or (Flyout_Config['REVISION'] == nil or Flyout_Config['REVISION'] ~= revision) then
-         Flyout_Config = {
-            ['REVISION'] = revision,
-            ['BUTTON_SIZE'] = 24,
-            ['BORDER_COLOR'] = { 0, 0, 0 },
-         }
+         Flyout_Config = {}
+      end
+      -- Initialize defaults if not present.
+      for key, value in pairs(FLYOUT_DEFAULT_CONFIG) do
+         if not Flyout_Config[key] then
+            Flyout_Config[key] = value
+         end
       end
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
-      Flyout_Hide()
+      Flyout_Hide(true)  -- Keep sticky menus open.
       UpdateBarButton(arg1)
    else
       Flyout_Hide()
@@ -180,27 +217,77 @@ function Flyout_ExecuteMacro(macro)
    end
 end
 
-function Flyout_Hide()
+function Flyout_Hide(keepOpenIfSticky)
    local i = 1
    local button = _G['FlyoutButton' .. i]
    while button do
       i = i + 1
 
-      button:Hide()
-      button:SetChecked(false)
-      button:GetNormalTexture():SetTexture(nil)
+      if not keepOpenIfSticky or (keepOpenIfSticky and not button.sticky) then
+         button:Hide()
+         button:GetNormalTexture():SetTexture(nil)
+         button:GetPushedTexture():SetTexture(nil)
+      end
+      -- Un-highlight if no longer needed.
+      if button.actionType ~= 0 or not IsCurrentCast(button.action, 'spell') then
+         button:SetChecked(false)
+      end
 
       button = _G['FlyoutButton' .. i]
    end
 end
 
-function Flyout_Show(button, spells)
+
+
+-- Reusable variables for FlyoutBarButton_UpdateCooldown().
+local cooldownStart, cooldownDuration, cooldownEnable
+
+local function FlyoutBarButton_UpdateCooldown(button, reset)
+   button = button or this
+
+   if button.actionType == 0 then
+      cooldownStart, cooldownDuration, cooldownEnable = GetSpellCooldown(button.action, BOOKTYPE_SPELL)
+      if cooldownStart > 0 and cooldownDuration > 0 then
+         -- Start/Duration check is needed to get the shine animation.
+         CooldownFrame_SetTimer(button.cooldown, cooldownStart, cooldownDuration, cooldownEnable)
+      elseif reset then
+         -- When switching flyouts, need to hide cooldown if it shouldn't be visible.
+         button.cooldown:Hide()
+      end
+   else
+      button.cooldown:Hide()
+   end
+end
+
+
+
+local function FlyoutButton_OnUpdate()
+   -- Update tooltip.
+   if GetMouseFocus() == this and (not this.lastUpdate or GetTime() - this.lastUpdate > 1) then
+      this:GetScript("OnEnter")()
+      this.lastUpdate = GetTime()
+   end
+   FlyoutBarButton_UpdateCooldown(this)
+end
+
+
+
+
+function Flyout_Show(button)
    local direction = GetFlyoutDirection(button)
    local size = Flyout_Config['BUTTON_SIZE']
    local offset = size
 
-   for i, n in (strsplit(spells, ';')) do
+   for i, n in (strsplit(button.flyoutActions, ';')) do
       local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
+
+      -- Things that only need to happen once.
+      if not b.cooldown then
+         b.cooldown = _G['FlyoutButton' .. i .. 'Cooldown']
+         b:SetScript("OnUpdate", FlyoutButton_OnUpdate)
+      end
+
+      b.sticky = button.sticky
       local texture = nil
       
       if GetSpellSlotByName(n) then
@@ -222,10 +309,21 @@ function Flyout_Show(button, spells)
          b:ClearAllPoints()
          b:SetWidth(size)
          b:SetHeight(size)
+         b.cooldown:SetScale(size / b.cooldown:GetWidth())  -- Scale cooldown so it will stay centered on the button.
          b:SetBackdropColor(Flyout_Config['BORDER_COLOR'][1], Flyout_Config['BORDER_COLOR'][2], Flyout_Config['BORDER_COLOR'][3])
          b:Show()
 
          b:GetNormalTexture():SetTexture(texture)
+         b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
+         
+         -- Highlight professions and channeled casts.
+         if b.actionType == 0 and IsCurrentCast(b.action, 'spell') then
+            b:SetChecked(true)
+         end
+
+         -- Force an instant update.
+         this.lastUpdate = nil
+         FlyoutBarButton_UpdateCooldown(b, true)
 
          if direction == 'BOTTOM' then
             b:SetPoint('BOTTOM', button, 0, -offset)
@@ -278,24 +376,27 @@ function Flyout_UpdateFlyoutArrow(button)
    arrow:Show()
    arrow.texture:ClearAllPoints()
 
+   local arrowWideDimension = (button:GetWidth() or 36) * Flyout_Config['ARROW_SCALE']
+   local arrowShortDimension = arrowWideDimension * ARROW_RATIO
+
    if direction == 'BOTTOM' then
-      arrow.texture:SetWidth(20)
-      arrow.texture:SetHeight(12)
+      arrow.texture:SetWidth(arrowWideDimension)
+      arrow.texture:SetHeight(arrowShortDimension)
       arrow.texture:SetTexCoord(0, 0.565, 0.315, 0)
       arrow.texture:SetPoint('BOTTOM', arrow, 0, -6)
    elseif direction == 'LEFT' then
-      arrow.texture:SetWidth(12)
-      arrow.texture:SetHeight(20)
+      arrow.texture:SetWidth(arrowShortDimension)
+      arrow.texture:SetHeight(arrowWideDimension)
       arrow.texture:SetTexCoord(0, 0.315, 0.375, 1)
       arrow.texture:SetPoint('LEFT', arrow, -6, 0)
    elseif direction == 'RIGHT' then
-      arrow.texture:SetWidth(12)
-      arrow.texture:SetHeight(20)
+      arrow.texture:SetWidth(arrowShortDimension)
+      arrow.texture:SetHeight(arrowWideDimension)
       arrow.texture:SetTexCoord(0.315, 0, 0.375, 1)
       arrow.texture:SetPoint('RIGHT', arrow, 6, 0)
    else
-      arrow.texture:SetWidth(20)
-      arrow.texture:SetHeight(12)
+      arrow.texture:SetWidth(arrowWideDimension)
+      arrow.texture:SetHeight(arrowShortDimension)
       arrow.texture:SetTexCoord(0, 0.565, 0, 0.315)
       arrow.texture:SetPoint('TOP', arrow, 0, 6)
    end
