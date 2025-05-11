@@ -149,9 +149,9 @@ local function UpdateBarButton(slot)
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
-               if not button.oldOnEnter then
-                  button.oldOnEnter = button:GetScript('OnEnter')
-                  button.oldOnLeave = button:GetScript('OnLeave')
+               if not button.preFlyoutOnEnter then
+                  button.preFlyoutOnEnter = button:GetScript('OnEnter')
+                  button.preFlyoutOnLeave = button:GetScript('OnLeave')
                end
 
                -- Identify sticky menus.
@@ -171,11 +171,16 @@ local function UpdateBarButton(slot)
             end
          end
 
-      elseif button.oldOnEnter then
-         button:SetScript('OnEnter', button.oldOnEnter)
-         button:SetScript('OnLeave', button.oldOnLeave)
-         button.oldOnEnter = nil
-         button.oldOnLeave = nil
+      else
+         -- Reset button to pre-Flyout condition.
+         button.flyoutActionType = nil
+         button.flyoutAction = nil
+         if button.preFlyoutOnEnter then
+            button:SetScript('OnEnter', button.preFlyoutOnEnter)
+            button:SetScript('OnLeave', button.preFlyoutOnLeave)
+            button.preFlyoutOnEnter = nil
+            button.preFlyoutOnLeave = nil
+         end
       end
    end
 end
@@ -208,6 +213,17 @@ handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 handler:SetScript('OnEvent', HandleEvent)
 
 -- globals
+function Flyout_Execute(button)
+   if not button or not button.flyoutActionType or not button.flyoutAction then
+      return
+   end
+   if button.flyoutActionType == 0 then
+      CastSpell(button.flyoutAction, 'spell')
+   elseif button.flyoutActionType == 1 then
+      Flyout_ExecuteMacro(button.flyoutAction)
+   end
+end
+
 function Flyout_ExecuteMacro(macro)
    local _, _, body = GetMacroInfo(macro)
    local commands = strsplit(body, '\n')
@@ -229,7 +245,7 @@ function Flyout_Hide(keepOpenIfSticky)
          button:GetPushedTexture():SetTexture(nil)
       end
       -- Un-highlight if no longer needed.
-      if button.actionType ~= 0 or not IsCurrentCast(button.action, 'spell') then
+      if button.flyoutActionType ~= 0 or not IsCurrentCast(button.flyoutAction, 'spell') then
          button:SetChecked(false)
       end
 
@@ -245,8 +261,8 @@ local cooldownStart, cooldownDuration, cooldownEnable
 local function FlyoutBarButton_UpdateCooldown(button, reset)
    button = button or this
 
-   if button.actionType == 0 then
-      cooldownStart, cooldownDuration, cooldownEnable = GetSpellCooldown(button.action, BOOKTYPE_SPELL)
+   if button.flyoutActionType == 0 then
+      cooldownStart, cooldownDuration, cooldownEnable = GetSpellCooldown(button.flyoutAction, BOOKTYPE_SPELL)
       if cooldownStart > 0 and cooldownDuration > 0 then
          -- Start/Duration check is needed to get the shine animation.
          CooldownFrame_SetTimer(button.cooldown, cooldownStart, cooldownDuration, cooldownEnable)
@@ -293,14 +309,14 @@ function Flyout_Show(button)
       if GetSpellSlotByName(n) then
          local spellName = GetSpellSlotByName(n)
 
-         b.action = spellName
-         b.actionType = 0
+         b.flyoutAction = spellName
+         b.flyoutActionType = 0
 
          texture = GetSpellTexture(spellName, 'spell')
       elseif GetMacroIndexByName(n) then
          local macroIndex = GetMacroIndexByName(n)
-         b.action = macroIndex
-         b.actionType = 1
+         b.flyoutAction = macroIndex
+         b.flyoutActionType = 1
 
          _, texture = GetMacroInfo(macroIndex)
       end
@@ -317,7 +333,7 @@ function Flyout_Show(button)
          b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
          
          -- Highlight professions and channeled casts.
-         if b.actionType == 0 and IsCurrentCast(b.action, 'spell') then
+         if b.flyoutActionType == 0 and IsCurrentCast(b.flyoutAction, 'spell') then
             b:SetChecked(true)
          end
 
@@ -336,6 +352,12 @@ function Flyout_Show(button)
          end
 
          offset = offset + size
+      end
+
+      -- Copy first flyout menu's actions to action bar button
+      if i == 1 then
+         button.flyoutActionType = b.flyoutActionType
+         button.flyoutAction = b.flyoutAction
       end
    end
 end
@@ -405,15 +427,6 @@ end
 local Flyout_UseAction = UseAction
 function UseAction(slot, checkCursor)
    Flyout_UseAction(slot, checkCursor)
-
-   local button = Flyout_GetActionButton(slot)
-   if button and button.flyout then
-      if button.flyout[1] == 0 then
-         CastSpell(button.flyout[2], 'spell')
-      else
-         Flyout_ExecuteMacro(button.flyout[2])
-      end
-   end
-
+   Flyout_Execute(Flyout_GetActionButton(slot))
    Flyout_Hide()
 end
