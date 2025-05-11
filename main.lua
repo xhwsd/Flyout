@@ -64,14 +64,15 @@ local function tblclear(tbl)
 	end
 end
 
-local strSplitReturn = {}  -- Reusable table for strsplit().
-local function strsplit(str, delimiter)
-   tblclear(strSplitReturn)
+local strSplitReturn = {}  -- Reusable table for strsplit() when fillTable parameter isn't used.
+local function strsplit(str, delimiter, fillTable)
+   fillTable = fillTable or strSplitReturn
+   tblclear(fillTable)
    strgsub(str, '([^' .. delimiter .. ']+)', function(value)
-      insert(strSplitReturn, strtrim(value))
+      insert(fillTable, strtrim(value))
    end)
 
-   return strSplitReturn
+   return fillTable
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
@@ -89,6 +90,15 @@ local function GetSpellSlotByName(name)
             return index
          end
       end
+   end
+end
+
+-- Returns <action>, <actionType>
+local function GetFlyoutActionInfo(action)
+   if GetSpellSlotByName(action) then
+      return GetSpellSlotByName(action), 0
+   elseif GetMacroIndexByName(action) then
+      return GetMacroIndexByName(action), 1
    end
 end
 
@@ -158,11 +168,19 @@ local function UpdateBarButton(slot)
                if strfind(body, "%[sticky%]") then
                   body = strgsub(body, "%[sticky%]", "")
                   button.sticky = true
-              end
+               end
 
                body = strsub(body, e + 1)
 
-               button.flyoutActions = body
+               if not button.flyoutActions then
+                  button.flyoutActions = {}
+               end
+
+               strsplit(body, ';', button.flyoutActions)
+
+               if table.getn(button.flyoutActions) > 0 then
+                  button.flyoutAction, button.flyoutActionType = GetFlyoutActionInfo(button.flyoutActions[1])
+               end
 
                Flyout_UpdateFlyoutArrow(button)
 
@@ -294,7 +312,7 @@ function Flyout_Show(button)
    local size = Flyout_Config['BUTTON_SIZE']
    local offset = size
 
-   for i, n in (strsplit(button.flyoutActions, ';')) do
+   for i, n in button.flyoutActions do
       local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
 
       -- Things that only need to happen once.
@@ -305,20 +323,13 @@ function Flyout_Show(button)
 
       b.sticky = button.sticky
       local texture = nil
-      
-      if GetSpellSlotByName(n) then
-         local spellName = GetSpellSlotByName(n)
 
-         b.flyoutAction = spellName
-         b.flyoutActionType = 0
+      b.flyoutAction, b.flyoutActionType = GetFlyoutActionInfo(n)
 
-         texture = GetSpellTexture(spellName, 'spell')
-      elseif GetMacroIndexByName(n) then
-         local macroIndex = GetMacroIndexByName(n)
-         b.flyoutAction = macroIndex
-         b.flyoutActionType = 1
-
-         _, texture = GetMacroInfo(macroIndex)
+      if b.flyoutActionType == 0 then
+         texture = GetSpellTexture(b.flyoutAction, 'spell')
+      elseif b.flyoutActionType == 1 then
+         _, texture = GetMacroInfo(b.flyoutAction)
       end
 
       if texture then
@@ -354,11 +365,6 @@ function Flyout_Show(button)
          offset = offset + size
       end
 
-      -- Copy first flyout menu's actions to action bar button
-      if i == 1 then
-         button.flyoutActionType = b.flyoutActionType
-         button.flyoutAction = b.flyoutAction
-      end
    end
 end
 
