@@ -64,14 +64,15 @@ local function tblclear(tbl)
 	end
 end
 
-local strSplitReturn = {}  -- Reusable table for strsplit().
-local function strsplit(str, delimiter)
-   tblclear(strSplitReturn)
+local strSplitReturn = {}  -- Reusable table for strsplit() when fillTable parameter isn't used.
+local function strsplit(str, delimiter, fillTable)
+   fillTable = fillTable or strSplitReturn
+   tblclear(fillTable)
    strgsub(str, '([^' .. delimiter .. ']+)', function(value)
-      insert(strSplitReturn, strtrim(value))
+      insert(fillTable, strtrim(value))
    end)
 
-   return strSplitReturn
+   return fillTable
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
@@ -89,6 +90,15 @@ local function GetSpellSlotByName(name)
             return index
          end
       end
+   end
+end
+
+-- Returns <action>, <actionType>
+local function GetFlyoutActionInfo(action)
+   if GetSpellSlotByName(action) then
+      return GetSpellSlotByName(action), 0
+   elseif GetMacroIndexByName(action) then
+      return GetMacroIndexByName(action), 1
    end
 end
 
@@ -149,20 +159,28 @@ local function UpdateBarButton(slot)
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
-               if not button.oldOnEnter then
-                  button.oldOnEnter = button:GetScript('OnEnter')
-                  button.oldOnLeave = button:GetScript('OnLeave')
+               if not button.preFlyoutOnEnter then
+                  button.preFlyoutOnEnter = button:GetScript('OnEnter')
+                  button.preFlyoutOnLeave = button:GetScript('OnLeave')
                end
 
                -- Identify sticky menus.
                if strfind(body, "%[sticky%]") then
                   body = strgsub(body, "%[sticky%]", "")
                   button.sticky = true
-              end
+               end
 
                body = strsub(body, e + 1)
 
-               button.flyoutActions = body
+               if not button.flyoutActions then
+                  button.flyoutActions = {}
+               end
+
+               strsplit(body, ';', button.flyoutActions)
+
+               if table.getn(button.flyoutActions) > 0 then
+                  button.flyoutAction, button.flyoutActionType = GetFlyoutActionInfo(button.flyoutActions[1])
+               end
 
                Flyout_UpdateFlyoutArrow(button)
 
@@ -171,11 +189,16 @@ local function UpdateBarButton(slot)
             end
          end
 
-      elseif button.oldOnEnter then
-         button:SetScript('OnEnter', button.oldOnEnter)
-         button:SetScript('OnLeave', button.oldOnLeave)
-         button.oldOnEnter = nil
-         button.oldOnLeave = nil
+      else
+         -- Reset button to pre-Flyout condition.
+         button.flyoutActionType = nil
+         button.flyoutAction = nil
+         if button.preFlyoutOnEnter then
+            button:SetScript('OnEnter', button.preFlyoutOnEnter)
+            button:SetScript('OnLeave', button.preFlyoutOnLeave)
+            button.preFlyoutOnEnter = nil
+            button.preFlyoutOnLeave = nil
+         end
       end
    end
 end
@@ -208,6 +231,17 @@ handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 handler:SetScript('OnEvent', HandleEvent)
 
 -- globals
+function Flyout_Execute(button)
+   if not button or not button.flyoutActionType or not button.flyoutAction then
+      return
+   end
+   if button.flyoutActionType == 0 then
+      CastSpell(button.flyoutAction, 'spell')
+   elseif button.flyoutActionType == 1 then
+      Flyout_ExecuteMacro(button.flyoutAction)
+   end
+end
+
 function Flyout_ExecuteMacro(macro)
    local _, _, body = GetMacroInfo(macro)
    local commands = strsplit(body, '\n')
@@ -229,7 +263,7 @@ function Flyout_Hide(keepOpenIfSticky)
          button:GetPushedTexture():SetTexture(nil)
       end
       -- Un-highlight if no longer needed.
-      if button.actionType ~= 0 or not IsCurrentCast(button.action, 'spell') then
+      if button.flyoutActionType ~= 0 or not IsCurrentCast(button.flyoutAction, 'spell') then
          button:SetChecked(false)
       end
 
@@ -245,8 +279,8 @@ local cooldownStart, cooldownDuration, cooldownEnable
 local function FlyoutBarButton_UpdateCooldown(button, reset)
    button = button or this
 
-   if button.actionType == 0 then
-      cooldownStart, cooldownDuration, cooldownEnable = GetSpellCooldown(button.action, BOOKTYPE_SPELL)
+   if button.flyoutActionType == 0 then
+      cooldownStart, cooldownDuration, cooldownEnable = GetSpellCooldown(button.flyoutAction, BOOKTYPE_SPELL)
       if cooldownStart > 0 and cooldownDuration > 0 then
          -- Start/Duration check is needed to get the shine animation.
          CooldownFrame_SetTimer(button.cooldown, cooldownStart, cooldownDuration, cooldownEnable)
@@ -278,7 +312,7 @@ function Flyout_Show(button)
    local size = Flyout_Config['BUTTON_SIZE']
    local offset = size
 
-   for i, n in (strsplit(button.flyoutActions, ';')) do
+   for i, n in button.flyoutActions do
       local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
 
       -- Things that only need to happen once.
@@ -289,20 +323,13 @@ function Flyout_Show(button)
 
       b.sticky = button.sticky
       local texture = nil
-      
-      if GetSpellSlotByName(n) then
-         local spellName = GetSpellSlotByName(n)
 
-         b.action = spellName
-         b.actionType = 0
+      b.flyoutAction, b.flyoutActionType = GetFlyoutActionInfo(n)
 
-         texture = GetSpellTexture(spellName, 'spell')
-      elseif GetMacroIndexByName(n) then
-         local macroIndex = GetMacroIndexByName(n)
-         b.action = macroIndex
-         b.actionType = 1
-
-         _, texture = GetMacroInfo(macroIndex)
+      if b.flyoutActionType == 0 then
+         texture = GetSpellTexture(b.flyoutAction, 'spell')
+      elseif b.flyoutActionType == 1 then
+         _, texture = GetMacroInfo(b.flyoutAction)
       end
 
       if texture then
@@ -317,7 +344,7 @@ function Flyout_Show(button)
          b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
          
          -- Highlight professions and channeled casts.
-         if b.actionType == 0 and IsCurrentCast(b.action, 'spell') then
+         if b.flyoutActionType == 0 and IsCurrentCast(b.flyoutAction, 'spell') then
             b:SetChecked(true)
          end
 
@@ -337,6 +364,7 @@ function Flyout_Show(button)
 
          offset = offset + size
       end
+
    end
 end
 
@@ -405,15 +433,6 @@ end
 local Flyout_UseAction = UseAction
 function UseAction(slot, checkCursor)
    Flyout_UseAction(slot, checkCursor)
-
-   local button = Flyout_GetActionButton(slot)
-   if button and button.flyout then
-      if button.flyout[1] == 0 then
-         CastSpell(button.flyout[2], 'spell')
-      else
-         Flyout_ExecuteMacro(button.flyout[2])
-      end
-   end
-
+   Flyout_Execute(Flyout_GetActionButton(slot))
    Flyout_Hide()
 end
