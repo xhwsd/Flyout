@@ -231,14 +231,39 @@ handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
 handler:SetScript('OnEvent', HandleEvent)
 
 -- globals
-function Flyout_Execute(button)
+function Flyout_OnClick(button)
    if not button or not button.flyoutActionType or not button.flyoutAction then
       return
    end
-   if button.flyoutActionType == 0 then
-      CastSpell(button.flyoutAction, 'spell')
-   elseif button.flyoutActionType == 1 then
-      Flyout_ExecuteMacro(button.flyoutAction)
+
+   if arg1 == 'LeftButton' then
+      if button.flyoutActionType == 0 then
+         CastSpell(button.flyoutAction, 'spell')
+      elseif button.flyoutActionType == 1 then
+         Flyout_ExecuteMacro(button.flyoutAction)
+      end
+   elseif arg1 == 'RightButton' and button.flyoutParent then
+      local parent = button.flyoutParent
+      local oldAction = parent.flyoutActions[1]
+      local newAction = parent.flyoutActions[button:GetID()]
+      if oldAction ~= newAction then
+         local slot = ActionButton_GetPagedID(parent)
+         local macro = GetActionText(slot)
+         local name, icon, body, isLocal = GetMacroInfo(GetMacroIndexByName(macro))
+
+         local as, ae = string.find(body, oldAction, 1, true)
+         local bs, be = string.find(body, newAction, 1, true)
+         if as and bs then
+            body =
+               string.sub(body, 1, as - 1)
+               .. newAction
+               .. string.sub(body, ae + 1, bs - 1)
+               .. oldAction
+               .. string.sub(body, be + 1)
+
+            EditMacro(GetMacroIndexByName(macro), macro, icon, body, isLocal)
+         end
+      end
    end
 end
 
@@ -322,7 +347,12 @@ function Flyout_Show(button)
    _G[button:GetName() .. 'FlyoutArrow']:SetFrameStrata("FULLSCREEN")
 
    for i, n in button.flyoutActions do
-      local b = _G['FlyoutButton' .. i] or CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
+      local b = _G['FlyoutButton' .. i]
+      if not b then 
+         b = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
+         b:SetID(i)
+      end
+
       b.flyoutParent = button
 
       -- Things that only need to happen once.
@@ -443,6 +473,6 @@ end
 local Flyout_UseAction = UseAction
 function UseAction(slot, checkCursor)
    Flyout_UseAction(slot, checkCursor)
-   Flyout_Execute(Flyout_GetActionButton(slot))
+   Flyout_OnClick(Flyout_GetActionButton(slot))
    Flyout_Hide()
 end

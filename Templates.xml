@@ -26,9 +26,11 @@
             <OnLoad>
                 this.flyoutAction = ""
                 this.flyoutActionType = -1
+
+                this:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
             </OnLoad>
             <OnClick>
-                Flyout_Execute(this)
+                Flyout_OnClick(this)
                 Flyout_Hide(true)
             </OnClick>
             <OnEnter>
