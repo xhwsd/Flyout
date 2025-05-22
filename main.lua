@@ -236,7 +236,7 @@ function Flyout_OnClick(button)
       return
    end
 
-   if arg1 == 'LeftButton' then
+   if arg1 == nil or arg1 == 'LeftButton' then
       if button.flyoutActionType == 0 then
          CastSpell(button.flyoutAction, 'spell')
       elseif button.flyoutActionType == 1 then
