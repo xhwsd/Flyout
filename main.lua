@@ -170,6 +170,10 @@ local function UpdateBarButton(slot)
                   button.sticky = true
                end
 
+               if strfind(body, "%[icon%]") then
+                  body = strgsub(body, "%[icon%]", "")
+               end
+
                body = strsub(body, e + 1)
 
                if not button.flyoutActions then
@@ -254,6 +258,16 @@ function Flyout_OnClick(button)
          local as, ae = string.find(body, oldAction, 1, true)
          local bs, be = string.find(body, newAction, 1, true)
          if as and bs then
+            if strfind(body, "%[icon%]") then    
+               local texture = button:GetNormalTexture():GetTexture()         
+               for i = 1, GetNumMacroIcons() do
+                  if GetMacroIconInfo(i) == texture then
+                     icon = i
+                     break
+                  end
+               end
+            end
+
             body =
                string.sub(body, 1, as - 1)
                .. newAction
