@@ -33,6 +33,8 @@ local GetMacroIndexByName = GetMacroIndexByName
 local GetMacroInfo = GetMacroInfo
 
 local insert = table.insert
+local rawset = rawset
+local remove = table.remove
 local sizeof = table.getn
 
 local strfind = string.find
@@ -48,13 +50,13 @@ local function strtrim(str)
 end
 
 local function tblclear(tbl)
-	if type(tbl) ~= "table" then
+	if type(tbl) ~= 'table' then
 		return
 	end
 
 	-- Clear array-type tables first so table.insert will start over at 1.
 	for i = sizeof(tbl), 1, -1 do
-		table.remove(tbl, i)
+		remove(tbl, i)
 	end
 
 	-- Remove any remaining associative table elements.
@@ -102,7 +104,6 @@ local function GetFlyoutActionInfo(action)
    end
 end
 
--- local functions
 local function GetFlyoutDirection(button)
    local horizontal = false
    local bar = button:GetParent()
@@ -125,7 +126,6 @@ local function GetFlyoutDirection(button)
    return direction
 end
 
-
 local function FlyoutBarButton_OnLeave()
    this.updateTooltip = nil
    GameTooltip:Hide()
@@ -136,25 +136,23 @@ local function FlyoutBarButton_OnLeave()
    end
 end
 
-
 local function FlyoutBarButton_OnEnter()
    ActionButton_SetTooltip()
    Flyout_Show(this)
  end
 
-
 local function UpdateBarButton(slot)
    local button = Flyout_GetActionButton(slot)
    if button then
-
       local arrow = _G[button:GetName() .. 'FlyoutArrow']
       if arrow then
          arrow:Hide()
       end
 
       if HasAction(slot) then
-         local macro = GetActionText(slot)
          button.sticky = false
+         
+         local macro = GetActionText(slot)
          if macro then
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
@@ -165,13 +163,13 @@ local function UpdateBarButton(slot)
                end
 
                -- Identify sticky menus.
-               if strfind(body, "%[sticky%]") then
-                  body = strgsub(body, "%[sticky%]", "")
+               if strfind(body, '%[sticky%]') then
+                  body = strgsub(body, '%[sticky%]', '')
                   button.sticky = true
                end
 
-               if strfind(body, "%[icon%]") then
-                  body = strgsub(body, "%[icon%]", "")
+               if strfind(body, '%[icon%]') then
+                  body = strgsub(body, '%[icon%]', '')
                end
 
                body = strsub(body, e + 1)
@@ -258,7 +256,7 @@ function Flyout_OnClick(button)
          local as, ae = string.find(body, oldAction, 1, true)
          local bs, be = string.find(body, newAction, 1, true)
          if as and bs then
-            if strfind(body, "%[icon%]") then    
+            if strfind(body, '%[icon%]') then    
                local texture = button:GetNormalTexture():GetTexture()         
                for i = 1, GetNumMacroIcons() do
                   if GetMacroIconInfo(i) == texture then
@@ -316,8 +314,6 @@ function Flyout_Hide(keepOpenIfSticky)
    end
 end
 
-
-
 -- Reusable variables for FlyoutBarButton_UpdateCooldown().
 local cooldownStart, cooldownDuration, cooldownEnable
 
@@ -338,19 +334,14 @@ local function FlyoutBarButton_UpdateCooldown(button, reset)
    end
 end
 
-
-
 local function FlyoutButton_OnUpdate()
    -- Update tooltip.
    if GetMouseFocus() == this and (not this.lastUpdate or GetTime() - this.lastUpdate > 1) then
-      this:GetScript("OnEnter")()
+      this:GetScript('OnEnter')()
       this.lastUpdate = GetTime()
    end
    FlyoutBarButton_UpdateCooldown(this)
 end
-
-
-
 
 function Flyout_Show(button)
    local direction = GetFlyoutDirection(button)
@@ -358,7 +349,7 @@ function Flyout_Show(button)
    local offset = size
 
    -- Put arrow above the flyout buttons.
-   _G[button:GetName() .. 'FlyoutArrow']:SetFrameStrata("FULLSCREEN")
+   _G[button:GetName() .. 'FlyoutArrow']:SetFrameStrata('FULLSCREEN')
 
    for i, n in button.flyoutActions do
       local b = _G['FlyoutButton' .. i]
@@ -372,7 +363,7 @@ function Flyout_Show(button)
       -- Things that only need to happen once.
       if not b.cooldown then
          b.cooldown = _G['FlyoutButton' .. i .. 'Cooldown']
-         b:SetScript("OnUpdate", FlyoutButton_OnUpdate)
+         b:SetScript('OnUpdate', FlyoutButton_OnUpdate)
       end
 
       b.sticky = button.sticky
