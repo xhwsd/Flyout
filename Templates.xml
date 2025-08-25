@@ -31,7 +31,6 @@
             </OnLoad>
             <OnClick>
                 Flyout_OnClick(this)
-                Flyout_Hide(true)
             </OnClick>
             <OnEnter>
                 GameTooltip_SetDefaultAnchor(GameTooltip, this)

@@ -151,7 +151,7 @@ local function UpdateBarButton(slot)
 
       if HasAction(slot) then
          button.sticky = false
-         
+
          local macro = GetActionText(slot)
          if macro then
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
@@ -244,6 +244,8 @@ function Flyout_OnClick(button)
       elseif button.flyoutActionType == 1 then
          Flyout_ExecuteMacro(button.flyoutAction)
       end
+
+      Flyout_Hide(true)
    elseif arg1 == 'RightButton' and button.flyoutParent then
       local parent = button.flyoutParent
       local oldAction = parent.flyoutActions[1]
@@ -256,8 +258,8 @@ function Flyout_OnClick(button)
          local as, ae = string.find(body, oldAction, 1, true)
          local bs, be = string.find(body, newAction, 1, true)
          if as and bs then
-            if strfind(body, '%[icon%]') then    
-               local texture = button:GetNormalTexture():GetTexture()         
+            if strfind(body, '%[icon%]') then
+               local texture = button:GetNormalTexture():GetTexture()
                for i = 1, GetNumMacroIcons() do
                   if GetMacroIconInfo(i) == texture then
                      icon = i
@@ -274,7 +276,11 @@ function Flyout_OnClick(button)
                .. string.sub(body, be + 1)
 
             EditMacro(GetMacroIndexByName(macro), macro, icon, body, isLocal)
+
+            Flyout_Show(parent)
          end
+      else
+         button:SetChecked(0)
       end
    end
 end
@@ -353,7 +359,7 @@ function Flyout_Show(button)
 
    for i, n in button.flyoutActions do
       local b = _G['FlyoutButton' .. i]
-      if not b then 
+      if not b then
          b = CreateFrame('CheckButton', 'FlyoutButton' .. i, UIParent, 'FlyoutButtonTemplate')
          b:SetID(i)
       end
@@ -387,7 +393,7 @@ function Flyout_Show(button)
 
          b:GetNormalTexture():SetTexture(texture)
          b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
-         
+
          -- Highlight professions and channeled casts.
          if b.flyoutActionType == 0 and IsCurrentCast(b.flyoutAction, 'spell') then
             b:SetChecked(true)
