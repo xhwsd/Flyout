@@ -15,6 +15,7 @@ FLYOUT_DEFAULT_CONFIG = {
    ['BUTTON_SIZE'] = 28,
    ['BORDER_COLOR'] = { 0, 0, 0 },
    ['ARROW_SCALE'] = 5/9,
+   ['DIRECTION_OVERRIDE'] = nil, 
 }
 
 local ARROW_RATIO = 0.6  -- Height to width.
@@ -105,6 +106,13 @@ local function GetFlyoutActionInfo(action)
 end
 
 local function GetFlyoutDirection(button)
+   -- Check if there's a direction override first
+   if Flyout_Config['DIRECTION_OVERRIDE'] then
+      print("Using override direction: " .. tostring(Flyout_Config['DIRECTION_OVERRIDE']))
+      return Flyout_Config['DIRECTION_OVERRIDE']
+   end
+   
+   -- Original dynamic calculation code
    local horizontal = false
    local bar = button:GetParent()
    if bar:GetWidth() > bar:GetHeight() then
@@ -123,6 +131,7 @@ local function GetFlyoutDirection(button)
          direction = centerX > halfScreen and 'LEFT' or 'RIGHT'
       end
    end
+   print("Flyout direction: " .. tostring(direction))
    return direction
 end
 
