@@ -1,4 +1,27 @@
--- Add this helper function to validate direction (add around line 20)
+-- upvalues
+local strgfind = string.gfind
+
+local function ShowColorPicker(r, g, b, callback)
+   ColorPickerFrame:SetColorRGB(r, g, b)
+   ColorPickerFrame.previousValues = {r, g, b}
+   ColorPickerFrame.func, ColorPickerFrame.cancelFunc = callback, callback
+   ColorPickerFrame:Hide()
+   ColorPickerFrame:Show()
+end
+
+local function ColorPickerCallback(restore)
+   local r, g, b
+   if restore then
+      r, g, b = unpack(restore)
+   else
+      r, g, b = ColorPickerFrame:GetColorRGB()
+   end
+
+   Flyout_Config['BORDER_COLOR'][1] = r
+   Flyout_Config['BORDER_COLOR'][2] = g
+   Flyout_Config['BORDER_COLOR'][3] = b
+end
+
 local function IsValidDirection(direction)
    local validDirections = { "top", "bottom", "left", "right" }
    for i = 1, table.getn(validDirections) do
@@ -9,7 +32,6 @@ local function IsValidDirection(direction)
    return false
 end
 
--- Modify the main slash command function (around line 25)
 SLASH_FLYOUT1 = "/flyout"
 SlashCmdList['FLYOUT'] = function(msg)
    local args = {}
