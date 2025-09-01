@@ -1,27 +1,15 @@
--- upvalues
-local strgfind = string.gfind
-
-local function ShowColorPicker(r, g, b, callback)
-   ColorPickerFrame:SetColorRGB(r, g, b)
-   ColorPickerFrame.previousValues = {r, g, b}
-   ColorPickerFrame.func, ColorPickerFrame.cancelFunc = callback, callback
-   ColorPickerFrame:Hide()
-   ColorPickerFrame:Show()
-end
-
-local function ColorPickerCallback(restore)
-   local r, g, b
-   if restore then
-      r, g, b = unpack(restore)
-   else
-      r, g, b = ColorPickerFrame:GetColorRGB()
+-- Add this helper function to validate direction (add around line 20)
+local function IsValidDirection(direction)
+   local validDirections = { "top", "bottom", "left", "right" }
+   for i = 1, table.getn(validDirections) do
+      if validDirections[i] == direction then
+         return true
+      end
    end
-
-   Flyout_Config['BORDER_COLOR'][1] = r
-   Flyout_Config['BORDER_COLOR'][2] = g
-   Flyout_Config['BORDER_COLOR'][3] = b
+   return false
 end
 
+-- Modify the main slash command function (around line 25)
 SLASH_FLYOUT1 = "/flyout"
 SlashCmdList['FLYOUT'] = function(msg)
    local args = {}
@@ -35,6 +23,7 @@ SlashCmdList['FLYOUT'] = function(msg)
       DEFAULT_CHAT_FRAME:AddMessage("/flyout size [number||reset] - set flyout button size")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout color [reset] - adjust the color of the flyout border")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout arrow [number||reset] - adjust the relative size of the flyout arrow")
+      DEFAULT_CHAT_FRAME:AddMessage("/flyout direction [top|bottom|left|right|reset] - override flyout direction")
       DEFAULT_CHAT_FRAME:AddMessage(" ")
    elseif args[1] == 'size' then
       if args[2] then
@@ -64,6 +53,25 @@ SlashCmdList['FLYOUT'] = function(msg)
          end
          DEFAULT_CHAT_FRAME:AddMessage("Flyout arrow scale has been set to " .. Flyout_Config['ARROW_SCALE'] .. ".")
          Flyout_UpdateBars()
+      end
+   elseif args[1] == 'direction' then
+      if args[2] then
+         if args[2] == 'reset' then
+            Flyout_Config['DIRECTION_OVERRIDE'] = nil
+            DEFAULT_CHAT_FRAME:AddMessage("Flyout direction override has been reset. Using dynamic direction calculation.")
+         elseif IsValidDirection(args[2]) then
+            Flyout_Config['DIRECTION_OVERRIDE'] = strupper(args[2])
+            DEFAULT_CHAT_FRAME:AddMessage("Flyout direction has been set to " .. Flyout_Config['DIRECTION_OVERRIDE'] .. ".")
+         else
+            DEFAULT_CHAT_FRAME:AddMessage("Invalid direction. Valid options are: top, bottom, left, right, reset")
+         end
+         Flyout_UpdateBars() -- Update arrows after direction change
+      else
+         if Flyout_Config['DIRECTION_OVERRIDE'] then
+            DEFAULT_CHAT_FRAME:AddMessage("Current direction override: " .. Flyout_Config['DIRECTION_OVERRIDE'])
+         else
+            DEFAULT_CHAT_FRAME:AddMessage("No direction override set. Using dynamic calculation.")
+         end
       end
    end
 end
