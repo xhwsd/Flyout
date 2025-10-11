@@ -108,7 +108,7 @@ end
 local function GetFlyoutDirection(button)
    -- Check if there's a direction override first
    if Flyout_Config['DIRECTION_OVERRIDE'] then
-      print("Using override direction: " .. tostring(Flyout_Config['DIRECTION_OVERRIDE']))
+      --print("Using override direction: " .. tostring(Flyout_Config['DIRECTION_OVERRIDE']))
       return Flyout_Config['DIRECTION_OVERRIDE']
    end
    
