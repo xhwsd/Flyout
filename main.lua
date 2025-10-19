@@ -79,10 +79,15 @@ local function strsplit(str, delimiter, fillTable)
 end
 
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
+---法术插槽到名称
+---@param name string 法术名称
+---@return number index 法术索引
 local function GetSpellSlotByName(name)
    name = strlower(name)
    local b, _, rank = strfind(name, '%(%s*rank%s+(%d+)%s*%)')
-   if b then name = (b > 1) and strtrim(strsub(name, 1, b - 1)) or '' end
+   if b then 
+      name = (b > 1) and strtrim(strsub(name, 1, b - 1)) or ''
+   end
 
    for tabIndex = GetNumSpellTabs(), 1, -1 do
       local _, _, offset, count = GetSpellTabInfo(tabIndex)
@@ -96,15 +101,99 @@ local function GetSpellSlotByName(name)
    end
 end
 
--- Returns <action>, <actionType>
+---链接到名称
+---@param link string 连接
+---@return string name 名称
+local function ItemLinkToName(link)
+	if link and link ~= "" then
+      ---@diagnostic disable-next-line
+		return strgsub(link, "^.*%[(.*)%].*$", "%1")
+	end
+end
+
+---查找身上装备
+---@param item string 物品连接或物品名称
+---@return number? slot
+local function FindInventory(item)
+   if not item or item == "" then
+      return
+   end
+
+   -- 链接到装备名称
+	item = strlower(ItemLinkToName(item))
+
+   -- 遍历装备
+	for index = 1, 23 do
+		local link = GetInventoryItemLink("player", index)
+		if link then
+			if item == strlower(ItemLinkToName(link)) then
+				return index
+			end
+		end
+	end
+end
+
+---查找包中物品
+---@param item string 物品链接或物品名称
+---@return number bag
+---@return number slot
+local function FindItem(item)
+   if not item or item == "" then
+      return
+   end
+
+   -- 链接到物品名称
+	item = strlower(ItemLinkToName(item))
+
+   -- 遍历背包物品
+	for bag = 0, NUM_BAG_FRAMES do
+		for slot = 1, MAX_CONTAINER_ITEMS do
+			local link = GetContainerItemLink(bag, slot)
+			if link and item == strlower(ItemLinkToName(link)) then
+				return bag, slot
+			end
+		end
+	end
+end
+
+---取弹出动作信息
+---@param action string 动作内容
+---@return any value 动作值；因动作类型不同而不同
+---@return number actionType 动作类型；可选值：0.法术、1.宏、2.物品、3.装备
 local function GetFlyoutActionInfo(action)
-   if GetSpellSlotByName(action) then
-      return GetSpellSlotByName(action), 0
-   elseif GetMacroIndexByName(action) then
-      return GetMacroIndexByName(action), 1
+   if not action or action == "" then
+      return
+   end
+
+   -- 法术
+   local spellName = GetSpellSlotByName(action)
+   if spellName then
+      return spellName, 0
+   end
+
+   -- 普通宏
+   local macroIndex = GetMacroIndexByName(action)
+   if macroIndex > 0 then
+      return macroIndex, 1
+   end
+
+   -- 物品
+   local bag, slot = FindItem(action)
+   if bag and slot then
+      -- 物品
+      return {bag, slot}, 2
+   end
+
+   -- 装备
+   local slotIndex = FindInventory(action)
+   if slotIndex then
+      return slotIndex, 3
    end
 end
 
+---取弹出方向
+---@param button Frame 按钮
+---@return string direction 方向
 local function GetFlyoutDirection(button)
    -- Check if there's a direction override first
    if Flyout_Config['DIRECTION_OVERRIDE'] then
@@ -159,10 +248,12 @@ local function UpdateBarButton(slot)
       end
 
       if HasAction(slot) then
+         -- 非空插槽
          button.sticky = false
 
          local macro = GetActionText(slot)
          if macro then
+            -- 是宏插槽
             local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
             local s, e = strfind(body, '/flyout')
             if s and s == 1 and e == 7 then
@@ -187,9 +278,11 @@ local function UpdateBarButton(slot)
                   button.flyoutActions = {}
                end
 
+               -- 分割项
                strsplit(body, ';', button.flyoutActions)
 
                if table.getn(button.flyoutActions) > 0 then
+                  -- 使用第一个项为动作和类型
                   button.flyoutAction, button.flyoutActionType = GetFlyoutActionInfo(button.flyoutActions[1])
                end
 
@@ -216,6 +309,7 @@ end
 
 local function HandleEvent()
    if event == 'VARIABLES_LOADED' then
+      -- 变量载入 https://warcraft.wiki.gg/wiki/VARIABLES_LOADED
       if not Flyout_Config or (Flyout_Config['REVISION'] == nil or Flyout_Config['REVISION'] ~= revision) then
          Flyout_Config = {}
       end
@@ -226,9 +320,12 @@ local function HandleEvent()
          end
       end
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
+      -- 插槽内容改变 https://warcraft.wiki.gg/wiki/ACTIONBAR_SLOT_CHANGED
       Flyout_Hide(true)  -- Keep sticky menus open.
       UpdateBarButton(arg1)
    else
+      -- 当玩家登录时 PLAYER_ENTERING_WORLD https://warcraft.wiki.gg/wiki/PLAYER_ENTERING_WORLD
+      -- 动作条页面改变 ACTIONBAR_PAGE_CHANGED https://warcraft.wiki.gg/wiki/ACTIONBAR_PAGE_CHANGED
       Flyout_Hide()
       Flyout_UpdateBars()
    end
@@ -248,14 +345,24 @@ function Flyout_OnClick(button)
    end
 
    if arg1 == nil or arg1 == 'LeftButton' then
+      -- 左键单击
       if button.flyoutActionType == 0 then
+         -- 使用法术
          CastSpell(button.flyoutAction, 'spell')
       elseif button.flyoutActionType == 1 then
+         -- 执行普通宏
          Flyout_ExecuteMacro(button.flyoutAction)
+      elseif button.flyoutActionType == 2 then
+         -- 使用包中物品
+         UseContainerItem(button.flyoutAction[1], button.flyoutAction[2])
+      elseif button.flyoutActionType == 3 then
+         -- 使用身上装备
+         UseInventoryItem(button.flyoutAction)
       end
 
       Flyout_Hide(true)
    elseif arg1 == 'RightButton' and button.flyoutParent then
+      -- 右键单击
       local parent = button.flyoutParent
       local oldAction = parent.flyoutActions[1]
       local newAction = parent.flyoutActions[button:GetID()]
@@ -385,11 +492,18 @@ function Flyout_Show(button)
       local texture = nil
 
       b.flyoutAction, b.flyoutActionType = GetFlyoutActionInfo(n)
-
       if b.flyoutActionType == 0 then
+         -- 法术
          texture = GetSpellTexture(b.flyoutAction, 'spell')
       elseif b.flyoutActionType == 1 then
+         -- 普通宏
          _, texture = GetMacroInfo(b.flyoutAction)
+      elseif b.flyoutActionType == 2 then
+         -- 物品
+         texture = GetContainerItemInfo(b.flyoutAction[1], b.flyoutAction[2])
+      elseif b.flyoutActionType == 3 then
+         -- 装备
+         texture = GetInventoryItemTexture('player', b.flyoutAction)
       end
 
       if texture then
@@ -424,7 +538,6 @@ function Flyout_Show(button)
 
          offset = offset + size
       end
-
    end
 end
 
