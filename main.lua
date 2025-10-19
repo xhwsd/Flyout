@@ -18,13 +18,6 @@ FLYOUT_DEFAULT_CONFIG = {
    ['DIRECTION_OVERRIDE'] = nil, 
 }
 
--- 物品缓存相关变量
-local itemCache = {}  -- 物品位置信息缓存
-local itemCountCache = {}  -- 物品数量缓存
-local bagScanCache = {}  -- 背包扫描状态缓存
-local cacheTimestamp = 0  -- 缓存时间戳
-local CACHE_DURATION = 5  -- 缓存持续时间（秒）
-
 local ARROW_RATIO = 0.6  -- Height to width.
 
 -- upvalues
@@ -85,62 +78,6 @@ local function strsplit(str, delimiter, fillTable)
    return fillTable
 end
 
--- 清理物品缓存
-local function ClearItemCache()
-   tblclear(itemCache)
-   tblclear(itemCountCache)
-   tblclear(bagScanCache)
-   cacheTimestamp = GetTime()
-end
-
--- 检查缓存是否有效
-local function IsCacheValid()
-   return (GetTime() - cacheTimestamp) < CACHE_DURATION
-end
-
--- 扫描所有背包并缓存物品信息
-local function ScanAllBags()
-   if IsCacheValid() and bagScanCache.scanned then
-      return
-   end
-   
-   if not IsCacheValid() then
-      ClearItemCache()
-   end
-   
-   -- 遍历所有背包
-   for bagIndex = 0, 4 do
-      local bagSlots = GetContainerNumSlots(bagIndex)
-      if bagSlots and bagSlots > 0 then
-         for slotIndex = 1, bagSlots do
-            local itemLink = GetContainerItemLink(bagIndex, slotIndex)
-            if itemLink then
-               -- 从物品链接解析物品名称
-               local itemName = string.match(itemLink, "%[(.+)%]")
-               if itemName then
-                  local lowerItemName = strlower(itemName)
-                  
-                  -- 缓存第一个找到的物品位置
-                  if not itemCache[lowerItemName] then
-                     itemCache[lowerItemName] = {
-                        bagIndex = bagIndex,
-                        slotIndex = slotIndex,
-                        itemLink = itemLink
-                     }
-                  end
-                  
-                  -- 累计同名物品总数量
-                  local _, itemCount = GetContainerItemInfo(bagIndex, slotIndex)
-                  itemCountCache[lowerItemName] = (itemCountCache[lowerItemName] or 0) + (itemCount or 0)
-               end
-            end
-         end
-      end
-   end
-   
-   bagScanCache.scanned = true
-end
-
 -- credit: https://github.com/DanielAdolfsson/CleverMacro
 local function GetSpellSlotByName(name)
    name = strlower(name)
@@ -159,47 +96,13 @@ local function GetSpellSlotByName(name)
    end
 end
 
--- 根据物品名称搜索背包中的物品
-local function GetItemByName(name)
-   name = strlower(name)
-   
-   ScanAllBags()
-   
-   if itemCache[name] then
-      return itemCache[name].bagIndex, itemCache[name].slotIndex, itemCache[name].itemLink
-   end
-   
-   return nil
-end
-
--- 获取指定物品的总数量
-local function GetItemTotalCount(name)
-   name = strlower(name)
-   
-   ScanAllBags()
-   
-   return itemCountCache[name] or 0
-end
-
--- 根据动作名称获取动作信息和类型
--- 返回值：动作数据, 动作类型 (0=法术, 1=宏, 2=物品)
+-- Returns <action>, <actionType>
 local function GetFlyoutActionInfo(action)
-   local spellSlot = GetSpellSlotByName(action)
-   if spellSlot then
-      return spellSlot, 0
+   if GetSpellSlotByName(action) then
+      return GetSpellSlotByName(action), 0
+   elseif GetMacroIndexByName(action) then
+      return GetMacroIndexByName(action), 1
    end
-   
-   local macroIndex = GetMacroIndexByName(action)
-   if macroIndex and macroIndex > 0 then
-      return macroIndex, 1
-   end
-   
-   local bagIndex, slotIndex, itemLink = GetItemByName(action)
-   if bagIndex then
-      return {bagIndex = bagIndex, slotIndex = slotIndex, itemLink = itemLink}, 2
-   end
-   
-   return nil
 end
 
 local function GetFlyoutDirection(button)
@@ -325,11 +228,6 @@ local function HandleEvent()
    elseif event == 'ACTIONBAR_SLOT_CHANGED' then
       Flyout_Hide(true)  -- Keep sticky menus open.
       UpdateBarButton(arg1)
-   elseif event == 'BAG_UPDATE' then
-      -- 背包内容变化时清理缓存
-      ClearItemCache()
-      Flyout_Hide()
-      Flyout_UpdateBars()
    else
       Flyout_Hide()
       Flyout_UpdateBars()
@@ -341,7 +239,6 @@ handler:RegisterEvent('VARIABLES_LOADED')
 handler:RegisterEvent('PLAYER_ENTERING_WORLD')
 handler:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 handler:RegisterEvent('ACTIONBAR_PAGE_CHANGED')
-handler:RegisterEvent('BAG_UPDATE')
 handler:SetScript('OnEvent', HandleEvent)
 
 -- globals
@@ -355,12 +252,6 @@ function Flyout_OnClick(button)
          CastSpell(button.flyoutAction, 'spell')
       elseif button.flyoutActionType == 1 then
          Flyout_ExecuteMacro(button.flyoutAction)
-      elseif button.flyoutActionType == 2 then
-         -- 使用背包中的物品
-         local itemInfo = button.flyoutAction
-         if itemInfo and itemInfo.bagIndex and itemInfo.slotIndex then
-            UseContainerItem(itemInfo.bagIndex, itemInfo.slotIndex)
-         end
       end
 
       Flyout_Hide(true)
@@ -453,19 +344,6 @@ local function FlyoutBarButton_UpdateCooldown(button, reset)
          -- When switching flyouts, need to hide cooldown if it shouldn't be visible.
          button.cooldown:Hide()
       end
-   elseif button.flyoutActionType == 2 then
-      -- 处理物品冷却时间
-      local itemInfo = button.flyoutAction
-      if itemInfo and itemInfo.bagIndex and itemInfo.slotIndex then
-         cooldownStart, cooldownDuration, cooldownEnable = GetContainerItemCooldown(itemInfo.bagIndex, itemInfo.slotIndex)
-         if cooldownStart > 0 and cooldownDuration > 0 then
-            CooldownFrame_SetTimer(button.cooldown, cooldownStart, cooldownDuration, cooldownEnable)
-         elseif reset then
-            button.cooldown:Hide()
-         end
-      else
-         button.cooldown:Hide()
-      end
    else
       button.cooldown:Hide()
    end
@@ -512,12 +390,6 @@ function Flyout_Show(button)
          texture = GetSpellTexture(b.flyoutAction, 'spell')
       elseif b.flyoutActionType == 1 then
          _, texture = GetMacroInfo(b.flyoutAction)
-      elseif b.flyoutActionType == 2 then
-         -- 获取物品图标
-         local itemInfo = b.flyoutAction
-         if itemInfo and itemInfo.itemLink then
-            texture, _, _, _, _ = GetContainerItemInfo(itemInfo.bagIndex, itemInfo.slotIndex)
-         end
       end
 
       if texture then
@@ -530,32 +402,6 @@ function Flyout_Show(button)
 
          b:GetNormalTexture():SetTexture(texture)
          b:GetPushedTexture():SetTexture(texture)  -- Without this, icons disappear on click.
-
-         -- 为物品按钮添加数量显示
-         if b.flyoutActionType == 2 then
-            if not b.countText then
-               b.countText = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-               b.countText:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, 2)
-            end
-            
-            local itemInfo = b.flyoutAction
-            if itemInfo and itemInfo.itemLink then
-               local itemName = string.match(itemInfo.itemLink, "%[(.+)%]")
-               if itemName then
-                  local totalCount = GetItemTotalCount(itemName)
-                  if totalCount > 1 then
-                     b.countText:SetText(totalCount)
-                     b.countText:Show()
-                  else
-                     b.countText:Hide()
-                  end
-               end
-            end
-         else
-            if b.countText then
-               b.countText:Hide()
-            end
-         end
 
          -- Highlight professions and channeled casts.
          if b.flyoutActionType == 0 and IsCurrentCast(b.flyoutAction, 'spell') then
