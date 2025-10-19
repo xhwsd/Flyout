@@ -647,14 +647,6 @@ end
 local Flyout_UseAction = UseAction
 function UseAction(slot, checkCursor)
    Flyout_UseAction(slot, checkCursor)
-   -- 临时取消宏触发直接使用第一个技能/宏/物品的功能，这个会被触发使用物品的BUG
-   -- Flyout_OnClick(Flyout_GetActionButton(slot))
-   -- Flyout_Hide()
-   
-   -- 只有当按钮有flyout配置时才处理
-   local button = Flyout_GetActionButton(slot)
-   if button and button.flyoutActions and table.getn(button.flyoutActions) > 0 then
-      -- 不自动执行flyout点击，只隐藏飞出菜单
-      Flyout_Hide()
-   end
+   Flyout_OnClick(Flyout_GetActionButton(slot))
+   Flyout_Hide()
 end
