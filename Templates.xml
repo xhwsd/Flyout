@@ -42,7 +42,7 @@
                     -- 法术
                     GameTooltip:SetSpell(this.flyoutAction, 'spell')
                 elseif this.flyoutActionType == 1 then
-                    -- 宏
+                    -- 普通宏
                     GameTooltip:SetText(GetMacroInfo(this.flyoutAction), 1, 1, 1)
                 elseif this.flyoutActionType == 2 then
                     -- 物品
@@ -50,6 +50,9 @@
                 elseif this.flyoutActionType == 3 then
                     -- 装备
                     GameTooltip:SetInventoryItem('player', this.flyoutAction, 1)
+                elseif this.flyoutActionType == 4 then
+                    -- 超级宏
+                    GameTooltip:SetText(GetSuperMacroInfo(this.flyoutAction, 'name'), 1, 1, 1)
                 end
                 GameTooltip:Show()
             </OnEnter>

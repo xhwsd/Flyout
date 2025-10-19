@@ -159,7 +159,7 @@ end
 ---取弹出动作信息
 ---@param action string 动作内容
 ---@return any value 动作值；因动作类型不同而不同
----@return number actionType 动作类型；可选值：0.法术、1.宏、2.物品、3.装备
+---@return number actionType 动作类型；可选值：0.法术、1.普通宏、2.物品、3.装备、4.超级宏
 local function GetFlyoutActionInfo(action)
    if not action or action == "" then
       return
@@ -188,6 +188,14 @@ local function GetFlyoutActionInfo(action)
    local slotIndex = FindInventory(action)
    if slotIndex then
       return slotIndex, 3
+   end
+
+   -- 超级宏
+   if GetSuperMacroInfo then
+      local macroName = GetSuperMacroInfo(action, 'name')
+      if macroName then
+         return macroName, 4
+      end
    end
 end
 
@@ -358,6 +366,9 @@ function Flyout_OnClick(button)
       elseif button.flyoutActionType == 3 then
          -- 使用身上装备
          UseInventoryItem(button.flyoutAction)
+      elseif button.flyoutActionType == 4 then
+         -- 使用超级宏
+         RunSuperMacro(button.flyoutAction)
       end
 
       Flyout_Hide(true)
@@ -504,6 +515,9 @@ function Flyout_Show(button)
       elseif b.flyoutActionType == 3 then
          -- 装备
          texture = GetInventoryItemTexture('player', b.flyoutAction)
+      elseif b.flyoutActionType == 4 then
+         -- 超级宏
+         texture = GetSuperMacroInfo(b.flyoutAction, 'texture')
       end
 
       if texture then
