@@ -131,7 +131,7 @@ local function GetFlyoutDirection(button)
          direction = centerX > halfScreen and 'LEFT' or 'RIGHT'
       end
    end
-   print("Flyout direction: " .. tostring(direction))
+   -- print("Flyout direction: " .. tostring(direction))
    return direction
 end
 
