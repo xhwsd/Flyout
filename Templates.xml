@@ -58,8 +58,11 @@
                 GameTooltip:Hide()
 
                 local focus = GetMouseFocus()
-                if focus and not strfind(focus:GetName(), 'Flyout') then
-                    Flyout_Hide()
+                if focus then
+                    local name = focus:GetName()
+                    if name and not strfind(name, 'Flyout') then
+                        Flyout_Hide()
+                    end
                 end
             </OnLeave>
         </Scripts>
