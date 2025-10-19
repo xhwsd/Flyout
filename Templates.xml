@@ -38,6 +38,18 @@
                     GameTooltip:SetSpell(this.flyoutAction, 'spell')
                 elseif this.flyoutActionType == 1 then
                     GameTooltip:SetText(GetMacroInfo(this.flyoutAction), 1, 1, 1)
+                elseif this.flyoutActionType == 2 then
+                    if this.flyoutAction and this.flyoutAction.bagIndex and this.flyoutAction.slotIndex then
+                        GameTooltip:SetBagItem(this.flyoutAction.bagIndex, this.flyoutAction.slotIndex)
+                        -- 显示物品总数量
+                        local itemName = GetItemInfo(this.flyoutAction.itemLink)
+                        if itemName then
+                            local totalCount = GetItemTotalCount(itemName)
+                            if totalCount > 0 then
+                                GameTooltip:AddLine("总数量: " .. totalCount, 0.8, 0.8, 0.8)
+                            end
+                        end
+                    end
                 end
                 GameTooltip:Show()
             </OnEnter>
