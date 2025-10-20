@@ -14,8 +14,10 @@ end
 local function GetActionButton_PF(action)
     local bar = nil
 
-    if action < 25 then
+    if action < 13 then
         bar = 'pfActionBarMain'
+    elseif action < 25 then
+        bar = 'pfActionBarPaging'
     elseif action < 37 then
         bar = 'pfActionBarRight'
     elseif action < 49 then
