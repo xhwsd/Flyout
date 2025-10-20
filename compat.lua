@@ -1,13 +1,7 @@
-local _G = getfenv(0)
-
--- upvalues
-local IsAddOnLoaded = IsAddOnLoaded
-
-local mod = math.mod
 
 -- Bongos
 local function GetActionButton_Bongos(action)
-    return _G['BActionButton' .. action]
+    return getglobal('BActionButton' .. action)
 end
 
 -- pfUI
@@ -39,16 +33,19 @@ local function GetActionButton_PF(action)
     end
 
     local i = 1
-    if mod(action, 12) ~= 0 then
-        i = mod(action, 12)
+    if math.mod(action, 12) ~= 0 then
+        i = math.mod(action, 12)
     else
         i = 12
     end
 
-    return _G[bar .. 'Button' .. i]
+    return getglobal(bar .. 'Button' .. i)
 end
 
-local function HandleEvent()
+-- override original functions
+local handler = CreateFrame('Frame')
+handler:RegisterEvent('VARIABLES_LOADED')
+handler:SetScript('OnEvent', function()
     if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
         Flyout_GetActionButton = GetActionButton_Bongos
     end
@@ -56,9 +53,4 @@ local function HandleEvent()
     if IsAddOnLoaded('pfUI') then
         Flyout_GetActionButton = GetActionButton_PF
     end
-end
-
--- override original functions
-local handler = CreateFrame('Frame')
-handler:RegisterEvent('VARIABLES_LOADED')
-handler:SetScript('OnEvent', HandleEvent)
+end)

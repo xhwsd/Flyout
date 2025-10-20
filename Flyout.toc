@@ -4,10 +4,9 @@
 ## Notes: Allows the player to create a flyout action bar button.
 ## Version: GIT
 ## SavedVariablesPerCharacter: Flyout_Config
+## OptionalDeps: SuperMacro
 
 Templates.xml
-
 main.lua
 options.lua
-
 compat.lua

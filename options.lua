@@ -1,6 +1,3 @@
--- upvalues
-local strgfind = string.gfind
-
 local function ShowColorPicker(r, g, b, callback)
    ColorPickerFrame:SetColorRGB(r, g, b)
    ColorPickerFrame.previousValues = {r, g, b}
@@ -36,7 +33,7 @@ SLASH_FLYOUT1 = "/flyout"
 SlashCmdList['FLYOUT'] = function(msg)
    local args = {}
    local i = 1
-   for arg in strgfind(strlower(msg), "%S+") do
+   for arg in string.gfind(strlower(msg), "%S+") do
       args[i] = arg
       i = i + 1
    end
