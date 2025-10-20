@@ -1,64 +1,58 @@
-local _G = getfenv(0)
-
--- upvalues
-local IsAddOnLoaded = IsAddOnLoaded
-
-local mod = math.mod
-
--- Bongos
+-- 取 Bongos 的动作按钮
+---@param action number 动作
+---@return Frame|table|nil button 按钮
 local function GetActionButton_Bongos(action)
-    return _G['BActionButton' .. action]
+    return getglobal("BActionButton" .. action)
 end
 
--- pfUI
+-- 取 pfUI 的动作按钮
+---@param action number 动作
+---@return Frame|table|nil button 按钮
 local function GetActionButton_PF(action)
     local bar = nil
-
     if action < 13 then
-        bar = 'pfActionBarMain'
+        bar = "pfActionBarMain"
     elseif action < 25 then
-        bar = 'pfActionBarPaging'
+        bar = "pfActionBarPaging"
     elseif action < 37 then
-        bar = 'pfActionBarRight'
+        bar = "pfActionBarRight"
     elseif action < 49 then
-        bar = 'pfActionBarVertical'
+        bar = "pfActionBarVertical"
     elseif action < 61 then
-        bar = 'pfActionBarLeft'
+        bar = "pfActionBarLeft"
     elseif action < 73 then
-        bar = 'pfActionBarTop'
+        bar = "pfActionBarTop"
     elseif action < 85 then
-        bar = 'pfActionBarStanceBar1'
+        bar = "pfActionBarStanceBar1"
     elseif action < 97 then
-        bar = 'pfActionBarStanceBar2'
+        bar = "pfActionBarStanceBar2"
     elseif action < 109 then
-        bar = 'pfActionBarStanceBar3'
+        bar = "pfActionBarStanceBar3"
     elseif action < 121 then
-        bar = 'pfActionBarStanceBar4'
+        bar = "pfActionBarStanceBar4"
     else
-        bar = 'pfActionBarMain'
+        bar = "pfActionBarMain"
     end
 
-    local i = 1
-    if mod(action, 12) ~= 0 then
-        i = mod(action, 12)
+    local index = 1
+    if math.mod(action, 12) ~= 0 then
+        index = math.mod(action, 12)
     else
-        i = 12
+        index = 12
     end
 
-    return _G[bar .. 'Button' .. i]
+    return getglobal(bar .. "Button" .. index)
 end
 
-local function HandleEvent()
-    if IsAddOnLoaded('Bongos') and IsAddOnLoaded('Bongos_ActionBar') then
+-- 覆盖原有功能
+local handler = CreateFrame("Frame")
+handler:RegisterEvent("VARIABLES_LOADED")
+handler:SetScript("OnEvent", function()
+    if IsAddOnLoaded("Bongos") and IsAddOnLoaded("Bongos_ActionBar") then
         Flyout_GetActionButton = GetActionButton_Bongos
     end
 
-    if IsAddOnLoaded('pfUI') then
+    if IsAddOnLoaded("pfUI") then
         Flyout_GetActionButton = GetActionButton_PF
     end
-end
-
--- override original functions
-local handler = CreateFrame('Frame')
-handler:RegisterEvent('VARIABLES_LOADED')
-handler:SetScript('OnEvent', HandleEvent)
+end)
