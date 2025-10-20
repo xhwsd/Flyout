@@ -360,14 +360,14 @@ function Flyout_OnClick(button)
 			local slot = ActionButton_GetPagedID(parent)
 			local macro = GetActionText(slot)
 			local name, icon, body, isLocal = GetMacroInfo(GetMacroIndexByName(macro))
-			print("1.icon=", icon)
+			-- print("1.icon=", icon)
 			local as, ae = string.find(body, oldAction, 1, true)
 			local bs, be = string.find(body, newAction, 1, true)
 			if as and bs then
 				-- 法术纹理到图标索引
 				if string.find(body, '%[icon%]') then
 					local texture = button:GetNormalTexture():GetTexture()
-					print("texture=", icon)
+					-- print("texture=", icon)
 					for index = 1, GetNumMacroIcons() do
 						if GetMacroIconInfo(index) == texture then
 							icon = index
@@ -375,7 +375,7 @@ function Flyout_OnClick(button)
 						end
 					end
 				end
-				print("2.icon=", icon)
+				-- print("2.icon=", icon)
 				body =
 					string.sub(body, 1, as - 1)
 					.. newAction
@@ -413,7 +413,7 @@ function Flyout_Hide(keepOpenIfSticky)
 			button:GetNormalTexture():SetTexture(nil)
 			button:GetPushedTexture():SetTexture(nil)
 		end
-		
+
 		-- Un-highlight if no longer needed.
 		if button.flyoutActionType ~= 0 or not IsCurrentCast(button.flyoutAction, 'spell') then
 			button:SetChecked(false)
