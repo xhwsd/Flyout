@@ -370,7 +370,6 @@ function Flyout_OnClick(button)
 			-- 超级宏
 			RunSuperMacro(button.flyoutAction)
 		end
-
 		Flyout_Hide(true)
 	elseif arg1 == "RightButton" and button.flyoutParent then
 		-- 右键单击
@@ -379,16 +378,14 @@ function Flyout_OnClick(button)
 		local newAction = parent.flyoutActions[button:GetID()]
 		if oldAction ~= newAction then
 			local slot = ActionButton_GetPagedID(parent)
-			local macro = GetActionText(slot)
-			local name, icon, body, isLocal = GetMacroInfo(GetMacroIndexByName(macro))
-			-- print("1.icon=", icon)
+			local macro = GetMacroIndexByName(GetActionText(slot))
+			local name, icon, body, isLocal = GetMacroInfo(macro)
 			local as, ae = string.find(body, oldAction, 1, true)
 			local bs, be = string.find(body, newAction, 1, true)
 			if as and bs then
-				-- 法术纹理到图标索引
+				-- 法术纹理到宏图标索引
 				if string.find(body, "%[icon%]") then
 					local texture = button:GetNormalTexture():GetTexture()
-					-- print("texture=", icon)
 					for index = 1, GetNumMacroIcons() do
 						if GetMacroIconInfo(index) == texture then
 							icon = index
@@ -396,7 +393,8 @@ function Flyout_OnClick(button)
 						end
 					end
 				end
-				-- print("2.icon=", icon)
+
+				-- 调整弹出项位置
 				body =
 					string.sub(body, 1, as - 1)
 					.. newAction
@@ -404,7 +402,8 @@ function Flyout_OnClick(button)
 					.. oldAction
 					.. string.sub(body, be + 1)
 				
-				EditMacro(GetMacroIndexByName(macro), macro, icon, body, isLocal)
+				-- 编辑宏
+				EditMacro(macro, name, icon, body, isLocal)
 				Flyout_Show(parent)
 			end
 		else
@@ -414,7 +413,7 @@ function Flyout_OnClick(button)
 end
 
 ---执行普通宏
----@param macro string|number 宏名称或索引
+---@param macro number 宏索引
 function Flyout_ExecuteMacro(macro)
 	local _, _, body = GetMacroInfo(macro)
 	local commands = strsplit(body, "\n")
@@ -459,7 +458,6 @@ end
 ---@param reset? boolean 重置
 local function FlyoutBarButton_UpdateCooldown(button, reset)
 	button = button or this
-
 	if button.flyoutActionType == 0 then
 		-- 法术
 		local start, duration, enable = GetSpellCooldown(button.flyoutAction, BOOKTYPE_SPELL)
