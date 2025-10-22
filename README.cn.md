@@ -28,7 +28,7 @@
 - MacroExtender
 - SuperMacro
 
-### 扩展功能
+### 扩展优化
 - 已实现
    - 支持物品
    - 支持装备
