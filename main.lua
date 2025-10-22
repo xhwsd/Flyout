@@ -26,9 +26,9 @@ local ARROW_RATIO = 0.6  -- 高度与宽度之比。
 ---@param str string 字符串
 ---@return string trimmed 修剪后的字符串
 local function strtrim(str)
-	local _, e = string.find(str, "^%s*")
-	local s, _ = string.find(str, "%s*$", e + 1)
-	return string.sub(str, e + 1, s - 1)
+	local _, finish = string.find(str, "^%s*")
+	local start, _ = string.find(str, "%s*$", finish + 1)
+	return string.sub(str, finish + 1, start - 1)
 end
 
 ---表清空
@@ -82,9 +82,9 @@ local function GetSpellSlotByName(name)
 		-- 遍历标签页下法术
 		local _, _, offset, count = GetSpellTabInfo(tabIndex)
 		for index = offset + count, offset + 1, -1 do
-			local spell, subSpell = GetSpellName(index, "spell")
-			spell = string.lower(spell)
-			if name == spell and (not rank or subSpell == "等级 " .. rank) then
+			local spellName, spellRank = GetSpellName(index, "spell")
+			spellName = string.lower(spellName)
+			if name == spellName and (not rank or spellRank == "等级 " .. rank) then
 				return index
 			end
 		end
@@ -103,7 +103,7 @@ end
 
 ---查找身上装备
 ---@param name string 链接或名称
----@return number? slot
+---@return number slot
 local function FindInventory(name)
 	if not name or name == "" then
 		return
@@ -198,10 +198,10 @@ local function GetFlyoutDirection(button)
 		return Flyout_Config["DIRECTION_OVERRIDE"]
 	end
 	
-	-- 原始动态计数
+	-- 原始动态计算
 	local horizontal = false
 	local bar = button:GetParent()
-	if bar:GetWidth() > bar:GetHeight() then
+	if bar and bar:GetWidth() > bar:GetHeight() then
 		horizontal = true
 	end
 
@@ -219,6 +219,12 @@ local function GetFlyoutDirection(button)
 	return direction
 end
 
+---弹出栏按钮鼠标进入事件
+local function FlyoutBarButton_OnEnter()
+	ActionButton_SetTooltip()
+	Flyout_Show(this)
+end
+
 ---弹出栏按钮鼠标离开事件
 local function FlyoutBarButton_OnLeave()
 	this.updateTooltip = nil
@@ -228,12 +234,6 @@ local function FlyoutBarButton_OnLeave()
 	if focus and not string.find(focus:GetName(), "Flyout") then
 		Flyout_Hide()
 	end
-end
-
----弹出栏按钮鼠标进入事件
-local function FlyoutBarButton_OnEnter()
-	ActionButton_SetTooltip()
-	Flyout_Show(this)
 end
 
 ---更新弹出栏按钮
@@ -257,46 +257,45 @@ local function UpdateBarButton(slot)
 				-- 在超级宏加载后，执行 GetMacroInfo 返回 body 可能为空 xhwsd@qq.com 2025-10-21
 				local _, _, body = GetMacroInfo(GetMacroIndexByName(macro))
 				if body then
-					-- 宏内容是否是 /flyout 开头
-					local s, e = string.find(body, "/flyout")
-					if s and s == 1 and e == 7 then
+					-- 宏内容以是 /flyout 开头
+					local start, finish = string.find(body, "/flyout")
+					if start and start == 1 and finish == 7 then
 						if not button.preFlyoutOnEnter then
 							button.preFlyoutOnEnter = button:GetScript("OnEnter")
 							button.preFlyoutOnLeave = button:GetScript("OnLeave")
 						end
 
-						-- 粘性菜单
+						-- 移除粘性选项
 						if string.find(body, "%[sticky%]") then
 							body = string.gsub(body, "%[sticky%]", "")
 							button.sticky = true
 						end
 
-						-- 图标菜单
+						-- 移除图标选项
 						if string.find(body, "%[icon%]") then
 							body = string.gsub(body, "%[icon%]", "")
 						end
 
 						-- 分割弹出项
-						body = string.sub(body, e + 1)
+						body = string.sub(body, finish + 1)
 						if not button.flyoutActions then
 							button.flyoutActions = {}
 						end
 						strsplit(body, ";", button.flyoutActions)
 
+						-- 首个动作为默认动作
 						if table.getn(button.flyoutActions) > 0 then
-							-- 使用第一个项为动作和类型
 							button.flyoutAction, button.flyoutActionType = GetFlyoutActionInfo(button.flyoutActions[1])
 						end
 
 						Flyout_UpdateFlyoutArrow(button)
-
-						button:SetScript("OnLeave", FlyoutBarButton_OnLeave)
 						button:SetScript("OnEnter", FlyoutBarButton_OnEnter)
+						button:SetScript("OnLeave", FlyoutBarButton_OnLeave)
 					end
 				end
 			end
 		else
-			-- 重置按钮到飞出前状态。
+			-- 重置按钮到弹出前状态。
 			button.flyoutActionType = nil
 			button.flyoutAction = nil
 			if button.preFlyoutOnEnter then
@@ -380,9 +379,9 @@ function Flyout_OnClick(button)
 			local slot = ActionButton_GetPagedID(parent)
 			local macro = GetMacroIndexByName(GetActionText(slot))
 			local name, icon, body, isLocal = GetMacroInfo(macro)
-			local as, ae = string.find(body, oldAction, 1, true)
-			local bs, be = string.find(body, newAction, 1, true)
-			if as and bs then
+			local oldStart, oldEnd = string.find(body, oldAction, 1, true)
+			local newStart, newEnd = string.find(body, newAction, 1, true)
+			if oldStart and newStart then
 				-- 法术纹理到宏图标索引
 				if string.find(body, "%[icon%]") then
 					local texture = button:GetNormalTexture():GetTexture()
@@ -394,13 +393,19 @@ function Flyout_OnClick(button)
 					end
 				end
 
-				-- 调整弹出项位置
+				-- 调整动作位置
+				-- {首动作前文本}{原动作文本}{首动作后至新动作前文本}{新动作文本}{新动作后文本}
 				body =
-					string.sub(body, 1, as - 1)
+					-- 首动作前文本
+					string.sub(body, 1, oldStart - 1)
+					-- 新动作文本
 					.. newAction
-					.. string.sub(body, ae + 1, bs - 1)
+					-- 首动作后至新动作前文本
+					.. string.sub(body, oldEnd + 1, newStart - 1)
+					-- 原动作文本
 					.. oldAction
-					.. string.sub(body, be + 1)
+					-- 新动作后文本
+					.. string.sub(body, newEnd + 1)
 				
 				-- 编辑宏
 				EditMacro(macro, name, icon, body, isLocal)
@@ -435,7 +440,7 @@ function Flyout_Hide(keepOpenIfSticky)
 			button:GetPushedTexture():SetTexture(nil)
 		end
 
-		-- Un-highlight if no longer needed.
+		-- 取消选中状态（如果不再需要）。
 		if button.flyoutActionType ~= 0 or not IsCurrentCast(button.flyoutAction, "spell") then
 			button:SetChecked(false)
 		end
@@ -587,7 +592,7 @@ end
 
 ---取操作按钮
 ---@param action integer 操作
----@return Frame|table 按钮
+---@return Frame|table button 按钮
 function Flyout_GetActionButton(action)
 	for barIndex = 1, table.getn(bars) do
 		for buttonIndex = 1, 12 do
@@ -654,10 +659,10 @@ function Flyout_UpdateFlyoutArrow(button)
 	end
 end
 
--- 记录原`UseAction`
+-- 记录`UseAction`
 local oldUseAction = UseAction
 
----覆盖全局`UseAction`函数
+---覆盖`UseAction`；需确保在`SuperMacro`插件后覆盖，否则将无法生效 xhwsd@qq.com 2025-10-22
 ---@param slot number 槽位
 ---@param checkCursor boolean 检查鼠标
 ---@param onSelf boolean 自身

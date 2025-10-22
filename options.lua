@@ -44,17 +44,17 @@ SlashCmdList["FLYOUT"] = function(msg)
       DEFAULT_CHAT_FRAME:AddMessage("/flyout arrow [number||reset] - adjust the relative size of the flyout arrow")
       DEFAULT_CHAT_FRAME:AddMessage("/flyout direction [top|bottom|left|right|reset] - override flyout direction")
       DEFAULT_CHAT_FRAME:AddMessage(" ")
-   elseif args[1] == 'size' then
+   elseif args[1] == "size" then
       if args[2] then
-         if type(tonumber(args[2])) == 'number' then
+         if type(tonumber(args[2])) == "number" then
             Flyout_Config["BUTTON_SIZE"] = tonumber(args[2])
-         elseif args[2] == 'reset' then
+         elseif args[2] == "reset" then
             Flyout_Config["BUTTON_SIZE"] = FLYOUT_DEFAULT_CONFIG["BUTTON_SIZE"]
          end
          DEFAULT_CHAT_FRAME:AddMessage("Flyout button size has been set to " .. Flyout_Config["BUTTON_SIZE"] .. ".")
       end
-   elseif args[1] == 'color' then
-      if args[2] == 'reset' then
+   elseif args[1] == "color" then
+      if args[2] == "reset" then
          Flyout_Config["BORDER_COLOR"][1] = FLYOUT_DEFAULT_CONFIG["BORDER_COLOR"][1]
          Flyout_Config["BORDER_COLOR"][2] = FLYOUT_DEFAULT_CONFIG["BORDER_COLOR"][2]
          Flyout_Config["BORDER_COLOR"][3] = FLYOUT_DEFAULT_CONFIG["BORDER_COLOR"][3]
@@ -67,7 +67,7 @@ SlashCmdList["FLYOUT"] = function(msg)
       if args[2] then
          if type(tonumber(args[2])) == "number" then
             Flyout_Config["ARROW_SCALE"] = tonumber(args[2])
-         elseif args[2] == 'reset' then
+         elseif args[2] == "reset" then
             Flyout_Config["ARROW_SCALE"] = FLYOUT_DEFAULT_CONFIG["ARROW_SCALE"]
          end
          DEFAULT_CHAT_FRAME:AddMessage("Flyout arrow scale has been set to " .. Flyout_Config["ARROW_SCALE"] .. ".")

@@ -1,73 +1,70 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
-    <CheckButton name="FlyoutButtonTemplate" virtual="true" inherits="ActionButtonTemplate" parent="UIParent" hidden="true" frameStrata="FULLSCREEN">
-        <HitRectInsets>
-            <AbsInset left="-3" right="-3" top="-3" bottom="-3" />
-        </HitRectInsets>
-        <Backdrop bgFile="Interface/Tooltips/UI-Tooltip-Background">
-            <BackgroundInsets left="-1" right="-1" top="-1" bottom="-1" />
-            <Color r="0" g="0" b="0" />
-        </Backdrop>
-        <NormalTexture name="$parentNormalTexture">
-            <TexCoords left="0.08" right="0.92" top="0.08" bottom="0.92" />
-            <Anchors>
-                <Anchor point="TOPLEFT">
-                    <Offset>
-                        <AbsDimension x="1" y="-1" />
-                    </Offset>
-                </Anchor>
-                <Anchor point="BOTTOMRIGHT">
-                    <Offset>
-                        <AbsDimension x="-1" y="1" />
-                    </Offset>
-                </Anchor>
-            </Anchors>
-        </NormalTexture>
-        <Scripts>
-            <OnLoad>
-                -- 载入
-                this.flyoutAction = ""
-                this.flyoutActionType = -1
+	<CheckButton name="FlyoutButtonTemplate" virtual="true" inherits="ActionButtonTemplate" parent="UIParent" hidden="true" frameStrata="FULLSCREEN">
+		<HitRectInsets>
+			<AbsInset left="-3" right="-3" top="-3" bottom="-3" />
+		</HitRectInsets>
+		<Backdrop bgFile="Interface/Tooltips/UI-Tooltip-Background">
+			<BackgroundInsets left="-1" right="-1" top="-1" bottom="-1" />
+			<Color r="0" g="0" b="0" />
+		</Backdrop>
+		<NormalTexture name="$parentNormalTexture">
+			<TexCoords left="0.08" right="0.92" top="0.08" bottom="0.92" />
+			<Anchors>
+				<Anchor point="TOPLEFT">
+					<Offset>
+						<AbsDimension x="1" y="-1" />
+					</Offset>
+				</Anchor>
+				<Anchor point="BOTTOMRIGHT">
+					<Offset>
+						<AbsDimension x="-1" y="1" />
+					</Offset>
+				</Anchor>
+			</Anchors>
+		</NormalTexture>
+		<Scripts>
+			<OnLoad>
+				-- 载入
+				this.flyoutAction = ""
+				this.flyoutActionType = -1
 
-                -- 监听鼠标左右点击
-                this:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
-            </OnLoad>
-            <OnClick>
-                -- 单击
-                Flyout_OnClick(this)
-            </OnClick>
-            <OnEnter>
-                -- 鼠标进入
-                GameTooltip_SetDefaultAnchor(GameTooltip, this)
-                if this.flyoutActionType == 0 then
-                    -- 法术
-                    GameTooltip:SetSpell(this.flyoutAction, 'spell')
-                elseif this.flyoutActionType == 1 then
-                    -- 普通宏
-                    GameTooltip:SetText(GetMacroInfo(this.flyoutAction), 1, 1, 1)
-                elseif this.flyoutActionType == 2 then
-                    -- 物品
-                    GameTooltip:SetBagItem(this.flyoutAction[1], this.flyoutAction[2])
-                elseif this.flyoutActionType == 3 then
-                    -- 装备
-                    GameTooltip:SetInventoryItem('player', this.flyoutAction, 1)
-                elseif this.flyoutActionType == 4 then
-                    -- 超级宏
-                    GameTooltip:SetText(GetSuperMacroInfo(this.flyoutAction, 'name'), 1, 1, 1)
-                end
-                GameTooltip:Show()
-            </OnEnter>
-            <OnLeave>
-                -- 鼠标离开
-                GameTooltip:Hide()
+				-- 监听鼠标左右单击
+				this:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			</OnLoad>
+			<OnClick>
+				-- 左右单击
+				Flyout_OnClick(this)
+			</OnClick>
+			<OnEnter>
+				-- 鼠标进入
+				GameTooltip_SetDefaultAnchor(GameTooltip, this)
+				if this.flyoutActionType == 0 then
+					-- 法术
+					GameTooltip:SetSpell(this.flyoutAction, "spell")
+				elseif this.flyoutActionType == 1 then
+					-- 普通宏
+					GameTooltip:SetText(GetMacroInfo(this.flyoutAction), 1, 1, 1)
+				elseif this.flyoutActionType == 2 then
+					-- 物品
+					GameTooltip:SetBagItem(this.flyoutAction[1], this.flyoutAction[2])
+				elseif this.flyoutActionType == 3 then
+					-- 装备
+					GameTooltip:SetInventoryItem("player", this.flyoutAction, 1)
+				elseif this.flyoutActionType == 4 then
+					-- 超级宏
+					GameTooltip:SetText(GetSuperMacroInfo(this.flyoutAction, "name"), 1, 1, 1)
+				end
+				GameTooltip:Show()
+			</OnEnter>
+			<OnLeave>
+				-- 鼠标离开
+				GameTooltip:Hide()
 
-                local focus = GetMouseFocus()
-                if focus then
-                    local name = focus:GetName()
-                    if name and not strfind(name, 'Flyout') then
-                        Flyout_Hide()
-                    end
-                end
-            </OnLeave>
-        </Scripts>
-    </CheckButton>
+				local focus = GetMouseFocus()
+				if focus and not string.find(focus:GetName(), "Flyout") then
+					Flyout_Hide()
+				end
+			</OnLeave>
+		</Scripts>
+	</CheckButton>
 </Ui>
