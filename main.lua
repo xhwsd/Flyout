@@ -429,6 +429,7 @@ function Flyout_ExecuteMacro(macro)
 end
 
 ---隐藏弹出按钮
+---@param keepOpenIfSticky? boolean 是否保持粘性菜单打开
 function Flyout_Hide(keepOpenIfSticky)
 	---遍历所有弹出按钮
 	local index = 1
@@ -590,8 +591,8 @@ function Flyout_Show(button)
 	end
 end
 
----取操作按钮
----@param action integer 操作
+---取动作按钮
+---@param action integer 动作
 ---@return Frame|table button 按钮
 function Flyout_GetActionButton(action)
 	for barIndex = 1, table.getn(bars) do
@@ -659,7 +660,7 @@ function Flyout_UpdateFlyoutArrow(button)
 	end
 end
 
--- 记录`UseAction`
+-- 记录原`UseAction`
 local oldUseAction = UseAction
 
 ---覆盖`UseAction`；需确保在`SuperMacro`插件后覆盖，否则将无法生效 xhwsd@qq.com 2025-10-22
@@ -667,7 +668,9 @@ local oldUseAction = UseAction
 ---@param checkCursor boolean 检查鼠标
 ---@param onSelf boolean 自身
 function UseAction(slot, checkCursor, onSelf)
+	-- 回调原函数
 	oldUseAction(slot, checkCursor, onSelf)
+	-- 执行默认动作
 	Flyout_OnClick(Flyout_GetActionButton(slot))
-	Flyout_Hide()
+	Flyout_Hide(true)
 end

@@ -59,7 +59,6 @@
 			<OnLeave>
 				-- 鼠标离开
 				GameTooltip:Hide()
-
 				local focus = GetMouseFocus()
 				if focus and not string.find(focus:GetName(), "Flyout") then
 					Flyout_Hide()
