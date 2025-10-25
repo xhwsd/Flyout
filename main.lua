@@ -34,18 +34,16 @@ end
 ---表清空
 ---@param tbl table 表
 local function tblclear(tbl)
-	if type(tbl) ~= "table" then
-		return
-	end
+	if type(tbl) == "table" then
+		-- 先清空数组类型的表，确保 table.insert 从索引 1 开始。
+		for index = table.getn(tbl), 1, -1 do
+			table.remove(tbl, index)
+		end
 
-	-- 先清空数组类型的表，确保 table.insert 从索引 1 开始。
-	for index = table.getn(tbl), 1, -1 do
-		table.remove(tbl, index)
-	end
-
-	-- 删除所有剩余的关联表元素。
-	for index in next, tbl do
-		rawset(tbl, index, nil)
+		-- 删除所有剩余的关联表元素。
+		for index in next, tbl do
+			rawset(tbl, index, nil)
+		end
 	end
 end
 
@@ -71,21 +69,24 @@ end
 ---@param name string 名称
 ---@return number index 索引
 local function GetSpellSlotByName(name)
-	name = string.lower(name)
-	local start, _, rank = string.find(name, "%(%s*等级%s+(%d+)%s*%)")
-	if start then 
-		name = (start > 1) and strtrim(string.sub(name, 1, start - 1)) or ""
-	end
+	if type(name) == "string" and name ~= "" then
+		name = string.lower(name)
 
-	-- 遍历法术标签页
-	for tabIndex = GetNumSpellTabs(), 1, -1 do
-		-- 遍历标签页下法术
-		local _, _, offset, count = GetSpellTabInfo(tabIndex)
-		for index = offset + count, offset + 1, -1 do
-			local spellName, spellRank = GetSpellName(index, "spell")
-			spellName = string.lower(spellName)
-			if name == spellName and (not rank or spellRank == "等级 " .. rank) then
-				return index
+		-- 取法术名称和等级
+		local start, _, rank = string.find(name, "%(%s*等级%s+(%d+)%s*%)")
+		if start then 
+			name = (start > 1) and strtrim(string.sub(name, 1, start - 1)) or ""
+		end
+
+		-- 遍历法术标签页
+		for tabIndex = GetNumSpellTabs(), 1, -1 do
+			-- 遍历标签页下法术
+			local _, _, offset, count = GetSpellTabInfo(tabIndex)
+			for index = offset + count, offset + 1, -1 do
+				local spellName, spellRank = GetSpellName(index, "spell")
+				if string.lower(spellName) == name and (not rank or spellRank == "等级 " .. rank) then
+					return index
+				end
 			end
 		end
 	end
@@ -94,54 +95,60 @@ end
 ---链接到名称
 ---@param link string 链接
 ---@return string name 名称
-local function ItemLinkToName(link)
-	if link and link ~= "" then
+local function LinkToName(link)
+	if type(link) == "string" and link ~= "" then
 		---@diagnostic disable-next-line
 		return string.gsub(link, "^.*%[(.*)%].*$", "%1")
 	end
 end
 
 ---查找身上装备
----@param name string 链接或名称
----@return number slot
+---@param name string 名称
+---@return number index 索引
 local function FindInventory(name)
-	if not name or name == "" then
-		return
-	end
-
-	-- 链接到名称
-	name = string.lower(ItemLinkToName(name))
-
-	-- 遍历装备
-	for index = 1, 23 do
-		local link = GetInventoryItemLink("player", index)
-		if link then
-			if name == string.lower(ItemLinkToName(link)) then
-				return index
+	if type(name) == "string" and name ~= "" then
+		name = string.lower(LinkToName(name))
+		-- 遍历装备
+		for index = 1, 23 do
+			local link = GetInventoryItemLink("player", index)
+			if link then
+				if string.lower(LinkToName(link)) == name then
+					return index
+				end
 			end
 		end
 	end
 end
 
+
 ---查找包中物品
----@param name string 名称或链接
----@return number bag
----@return number slot
+---@param name string 名称
+---@return number bagIndex 容器索引
+---@return number slotIndex 插槽索引
 local function FindItem(name)
-	if not name or name == "" then
-		return
-	end
-
-	-- 链接到物品名称
-	name = string.lower(ItemLinkToName(name))
-
-	-- 遍历背包物品
-	for bag = 0, NUM_BAG_FRAMES do
-		for slot = 1, MAX_CONTAINER_ITEMS do
-			local link = GetContainerItemLink(bag, slot)
-			if link and name == string.lower(ItemLinkToName(link)) then
-				return bag, slot
+	if type(name) == "string" and name ~= "" then
+		name = string.lower(name)
+		-- 遍历背包物品
+		for bagIndex = 0, NUM_BAG_FRAMES do
+			for slotIndex = 1, MAX_CONTAINER_ITEMS do
+				local link = GetContainerItemLink(bagIndex, slotIndex)
+				if link and string.lower(LinkToName(link)) == name then
+					return bagIndex, slotIndex
+				end
 			end
+		end
+	end
+end
+
+---取物品名称
+---@param bagIndex number 容器索引
+---@param slotIndex number 插槽索引
+---@return string name 名称
+local function GetItemName(bagIndex, slotIndex)
+	if type(bagIndex) and type(slotIndex) then
+		local link = GetContainerItemLink(bagIndex, slotIndex)
+		if link then
+			return LinkToName(link)
 		end
 	end
 end
@@ -151,40 +158,38 @@ end
 ---@return any value 动作值；因动作类型不同而不同
 ---@return number actionType 动作类型；可选值：0.法术、1.普通宏、2.物品、3.装备、4.超级宏
 local function GetFlyoutActionInfo(action)
-	if not action or action == "" then
-		return
-	end
+	if type(action) == "string" and action ~= "" then
+		-- 法术
+		local spellIndex = GetSpellSlotByName(action)
+		if spellIndex then
+			return spellIndex, 0
+		end
 
-	-- 法术
-	local spellName = GetSpellSlotByName(action)
-	if spellName then
-		return spellName, 0
-	end
+		-- 普通宏
+		local macroIndex = GetMacroIndexByName(action)
+		if macroIndex > 0 then
+			return macroIndex, 1
+		end
 
-	-- 普通宏
-	local macroIndex = GetMacroIndexByName(action)
-	if macroIndex > 0 then
-		return macroIndex, 1
-	end
-
-	-- 物品
-	local bag, slot = FindItem(action)
-	if bag and slot then
 		-- 物品
-		return {bag, slot}, 2
-	end
+		local bag, slot = FindItem(action)
+		if bag and slot then
+			-- 物品
+			return {bag, slot}, 2
+		end
 
-	-- 装备
-	local slotIndex = FindInventory(action)
-	if slotIndex then
-		return slotIndex, 3
-	end
+		-- 装备
+		local slotIndex = FindInventory(action)
+		if slotIndex then
+			return slotIndex, 3
+		end
 
-	-- 超级宏
-	if GetSuperMacroInfo then
-		local macroName = GetSuperMacroInfo(action, "name")
-		if macroName then
-			return macroName, 4
+		-- 超级宏
+		if GetSuperMacroInfo then
+			local macroName = GetSuperMacroInfo(action, "name")
+			if macroName then
+				return macroName, 4
+			end
 		end
 	end
 end
@@ -355,15 +360,31 @@ function Flyout_OnClick(button)
 		-- 左键单击
 		if button.flyoutActionType == 0 then
 			-- 法术
+			---@diagnostic disable
 			CastSpell(button.flyoutAction, "spell")
 		elseif button.flyoutActionType == 1 then
 			-- 普通宏
 			Flyout_ExecuteMacro(button.flyoutAction)
 		elseif button.flyoutActionType == 2 then
 			-- 物品
-			UseContainerItem(button.flyoutAction[1], button.flyoutAction[2])
+			local bagIndex, slotIndex = button.flyoutAction[1], button.flyoutAction[2]
+			if button.flyoutActions then
+				-- 动作栏插槽
+				local name = GetItemName(bagIndex, slotIndex)
+				if not name or name ~= button.flyoutActions[1] then
+					-- 查找同名物品
+					bagIndex, slotIndex = FindItem(button.flyoutActions[1])
+				end
+			end
+
+			if bagIndex and slotIndex then
+				-- 刷新物品位置
+				button.flyoutAction = { bagIndex, slotIndex }
+				UseContainerItem(bagIndex, slotIndex)
+			end
 		elseif button.flyoutActionType == 3 then
 			-- 装备
+			---@diagnostic disable-next-line
 			UseInventoryItem(button.flyoutAction)
 		elseif button.flyoutActionType == 4 then
 			-- 超级宏
@@ -592,14 +613,14 @@ function Flyout_Show(button)
 end
 
 ---取动作按钮
----@param action integer 动作
+---@param slot integer 插槽
 ---@return Frame|table button 按钮
-function Flyout_GetActionButton(action)
+function Flyout_GetActionButton(slot)
 	for barIndex = 1, table.getn(bars) do
 		for buttonIndex = 1, 12 do
 			local button = getglobal(bars[barIndex] .. "Button" .. buttonIndex)
-			local slot = ActionButton_GetPagedID(button)
-			if slot == action and button:IsVisible() then
+			local index = ActionButton_GetPagedID(button)
+			if index == slot and button:IsVisible() then
 				return button
 			end
 		end
