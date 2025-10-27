@@ -120,7 +120,6 @@ local function FindInventory(name)
 	end
 end
 
-
 ---查找包中物品
 ---@param name string 名称
 ---@return number bagIndex 容器索引
@@ -349,6 +348,17 @@ end)
 
 --[[ 全局 ]]
 
+---执行普通宏
+---@param macro number 宏索引
+function Flyout_ExecuteMacro(macro)
+	local _, _, body = GetMacroInfo(macro)
+	local commands = strsplit(body, "\n")
+	for index = 1, table.getn(commands) do
+		ChatFrameEditBox:SetText(commands[index])
+		ChatEdit_SendText(ChatFrameEditBox)
+	end
+end
+
 ---单击事件
 ---@param button Frame|table 按钮
 function Flyout_OnClick(button)
@@ -379,6 +389,7 @@ function Flyout_OnClick(button)
 
 			if bagIndex and slotIndex then
 				-- 刷新物品位置
+				tblclear(button.flyoutAction)
 				button.flyoutAction = { bagIndex, slotIndex }
 				UseContainerItem(bagIndex, slotIndex)
 			end
@@ -438,17 +449,6 @@ function Flyout_OnClick(button)
 	end
 end
 
----执行普通宏
----@param macro number 宏索引
-function Flyout_ExecuteMacro(macro)
-	local _, _, body = GetMacroInfo(macro)
-	local commands = strsplit(body, "\n")
-	for index = 1, table.getn(commands) do
-		ChatFrameEditBox:SetText(commands[index])
-		ChatEdit_SendText(ChatFrameEditBox)
-	end
-end
-
 ---隐藏弹出按钮
 ---@param keepOpenIfSticky? boolean 是否保持粘性菜单打开
 function Flyout_Hide(keepOpenIfSticky)
@@ -467,7 +467,7 @@ function Flyout_Hide(keepOpenIfSticky)
 			button:SetChecked(false)
 		end
 
-		-- 取下个按钮
+		-- 取下个弹出按钮
 		index = index + 1
 		button = getglobal("FlyoutButton" .. index)
 	end
@@ -526,8 +526,8 @@ local function FlyoutButton_OnUpdate()
 	FlyoutBarButton_UpdateCooldown(this)
 end
 
----显示
----@param button Frame|table 按钮
+---显示所有弹出动作按钮
+---@param button Frame|table 动作按钮
 function Flyout_Show(button)
 	local direction = GetFlyoutDirection(button)
 	local size = Flyout_Config["BUTTON_SIZE"]
@@ -536,6 +536,7 @@ function Flyout_Show(button)
 	-- 将箭头放在弹出按钮上方。
 	getglobal(button:GetName() .. "FlyoutArrow"):SetFrameStrata("FULLSCREEN")
 
+	-- 遍历所有动作
 	for index, action in button.flyoutActions do
 		local item = getglobal("FlyoutButton" .. index)
 		if not item then
@@ -553,7 +554,7 @@ function Flyout_Show(button)
 
 		item.sticky = button.sticky
 		item.flyoutAction, item.flyoutActionType = GetFlyoutActionInfo(action)
-		
+
 		local texture = nil
 		if item.flyoutActionType == 0 then
 			-- 法术
@@ -572,6 +573,7 @@ function Flyout_Show(button)
 			texture = GetSuperMacroInfo(b.flyoutAction, "texture")
 		end
 
+		-- 物流有效
 		if texture then
 			item:ClearAllPoints()
 			---@diagnostic disable-next-line
@@ -607,13 +609,14 @@ function Flyout_Show(button)
 				item:SetPoint("TOP", button, 0, offset)
 			end
 
+			-- 记录下个按钮起始位置
 			offset = offset + size
 		end
 	end
 end
 
 ---取动作按钮
----@param slot integer 插槽
+---@param slot number 插槽
 ---@return Frame|table button 按钮
 function Flyout_GetActionButton(slot)
 	for barIndex = 1, table.getn(bars) do

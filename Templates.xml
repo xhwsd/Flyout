@@ -27,7 +27,6 @@
 				-- 载入
 				this.flyoutAction = ""
 				this.flyoutActionType = -1
-
 				-- 监听鼠标左右单击
 				this:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 			</OnLoad>
